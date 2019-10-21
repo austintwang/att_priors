@@ -56,4 +56,5 @@ Links to `/mnt/lab_data2/amtseng/att_priors/data/processed/`
 	- TileDB databases made by `create_ENCODE_binary_dbs.sh`
 - `profile/`
 	- TileDB databases made by `create_ENCODE_profile_dbs.sh`
+	- The TF ChIP-seq peak BEDs are split into training and holdout sets by `split_ENCODE_profile_peaks.sh`
 - TileDB databases are organized by ENCODE experiment; see the README in these directories to see what eac experiment is

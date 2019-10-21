@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import sacred
 from datetime import datetime
-import pyBigWig
+import tiledb
 import feature.util as util
 
 dataset_ex = sacred.Experiment("dataset")
@@ -91,44 +91,59 @@ class GenomeIntervalSampler:
 
 class CoordsToVals:
     """
-    From a single BigWig file mapping genomic coordinates to profiles, this
+    From the paths to several TileDB databases containing BigWig tracks, this
     creates an object that maps a list of coordinates to a NumPy array of
-    profiles.
+    profiles. The profiles are returned as an S x 2 x L array, where S is the
+    number of provided paths, and L is the length of the returned profile (both
+    plus and minus strands are given, in that order).
     Arguments:
-        `bigwig_path`: Path to BigWig containing profile
+        `tiledb_paths`: List of TileDB databases, each split by chromosome
         `center_size_to_use`: For each genomic coordinate, center it and pad it
             on both sides to this length to get the final profile; if this is
             smaller than the coordinate interval given, then the interval will
             be cut to this size by centering
     """
-    def __init__(self, bigwig_path, center_size_to_use):
-        self.bigwig_path = bigwig_path
+    def __init__(self, tiledb_paths, center_size_to_use):
+        self.tiledb_paths = tiledb_paths 
         self.center_size_to_use = center_size_to_use
 
-    def _get_profile(self, chrom, start, end, bigwig_reader):
+    def _get_profile(self, chrom, start, end, tiledb_context):
         """
         Fetches the profeile for the given coordinates, with an instantiated
-        BigWig reader. Returns the profile as a NumPy array of numbers. This may
-        pad or cut from the center to a specified length.
+        TileDB Context. Returns the profile as a NumPy array of numbers. This
+        may pad or cut from the center to a specified length.
         """
+        # Pad or cut
         if self.center_size_to_use:
             center = int(0.5 * (start + end))
             half_size = int(0.5 * self.center_size_to_use)
             left = center - half_size
             right = center + self.center_size_to_use - half_size
-            return np.nan_to_num(bigwig_reader.values(chrom, left, right))
         else:
-            return np.nan_to_num(bigwig_reader.values(chrom, start, end))
+            left, right = start, end
+       
+        # Read from each database
+        profiles = []
+        for path in self.tiledb_paths:
+            shard_path = "%s.%s" % (path, chrom)
+            arr = tiledb.DenseArray(shard_path, mode="r", ctx=tiledb_context)
+            plus = arr[left:right]["count_bigwig_plus_5p"]
+            minus = np.flip(arr[left:right]["count_bigwig_minus_5p"])
+            profiles.append(np.stack([plus, minus]))
+        return np.stack(profiles)
         
     def _get_ndarray(self, coords):
         """
         From an iterable of coordinates, retrieves a 2D NumPy array of
         corresponding profile values. Note that all coordinate intervals need
-        to be of the same length. 
+        to be of the same length. The returned array is of shape N x S x 2 x L,
+        where N is the number of coordinates given, S is the number of TileDB
+        databases given at instantiation, and L is the desired length.
         """
-        reader = pyBigWig.open(self.bigwig_path)
+        # To be thread-safe, create a new context
+        context = tiledb.Ctx()
         return np.stack([
-            self._get_profile(chrom, start, end, reader) \
+            self._get_profile(chrom, start, end, context) \
             for chrom, start, end in coords
         ])
 
@@ -225,34 +240,32 @@ class CoordDataset(torch.utils.data.IterableDataset):
     """
     Generates single samples of a one-hot encoded sequence and value.
     Arguments:
-        `coords_batcher (CoordsDownsampler): Maps indices to batches of
+        `coords_batcher (CoordsBatcher): Maps indices to batches of
             coordinates (split into positive and negative binding)
         `coords_to_seq (CoordsToSeq)`: Maps coordinates to 1-hot encoded
             sequences
-        `coords_to_vals_list (list of CoordsToVals)`: List of instantiated
-            CoordsToVals objects, each of which maps coordinates to profiles
-            to predict
+        `coords_to_vals (CoordsToVals)`: Maps coordinates to a set of profiles
         `revcomp`: Whether or not to perform revcomp to the batch; this will
             double the batch size implicitly
         `return_coords`: If True, each batch returns the set of coordinates for
             that batch along with the 1-hot encoded sequences and values
     """
     def __init__(
-        self, coords_batcher, coords_to_seq, coords_to_vals_list, revcomp=False,
+        self, coords_batcher, coords_to_seq, coords_to_vals, revcomp=False,
         return_coords=False
     ):
         self.coords_batcher = coords_batcher
         self.coords_to_seq = coords_to_seq
-        self.coords_to_vals_list = coords_to_vals_list
+        self.coords_to_vals = coords_to_vals
         self.revcomp = revcomp
         self.return_coords = return_coords
 
     def get_batch(self, index):
         """
         Returns a batch, which consists of an N x L x 4 NumPy array of 1-hot
-        encoded sequence, an N x T x 2 x L NumPy array of profiles, and a 1D
-        length-N NumPy array of statuses. The profile for each of the T tasks in
-        `coords_to_vals_list` is returned, in the same order as in this list,
+        encoded sequence, an N x S x 2 x L NumPy array of profiles, and a 1D
+        length-N NumPy array of statuses. The profile for each of the S tracks
+        in `coords_to_vals_list` is returned, in the same order as in this list,
         and each task contains 2 tracks, for the plus and minus strand,
         respectively.
         """
@@ -263,10 +276,7 @@ class CoordDataset(torch.utils.data.IterableDataset):
         seqs = self.coords_to_seq(coords, revcomp=self.revcomp)
 
         # Map this batch of coordinates to the associated profiles
-        profiles = np.stack([
-            np.stack([ctv_1(coords), ctv_2(coords)], axis=1) \
-            for ctv_1, ctv_2 in self.coords_to_vals_list
-        ], axis=1)
+        profiles = self.coords_to_vals(coords)
 
         # If reverse complementation was done, double sizes of everything else
         if self.revcomp:
@@ -317,7 +327,7 @@ class CoordDataset(torch.utils.data.IterableDataset):
 
 @dataset_ex.capture
 def data_loader_from_beds_and_bigwigs(
-    peaks_bed_paths, profile_bigwig_paths, batch_size, reference_fasta,
+    peaks_bed_paths, profile_tiledb_paths, batch_size, reference_fasta,
     chrom_sizes, input_length, profile_length, negative_ratio, num_workers,
     revcomp, jitter_size, dataset_seed, shuffle=True, return_coords=False
 ):
@@ -330,13 +340,7 @@ def data_loader_from_beds_and_bigwigs(
     True, shuffle the dataset before each epoch.
     """
     # Maps set of coordinates to profiles
-    coords_to_vals_list = [
-        (
-            CoordsToVals(path_1, profile_length),
-            CoordsToVals(path_2, profile_length)
-        )
-        for path_1, path_2 in profile_bigwig_paths
-    ]
+    coords_to_vals = CoordsToVals(profile_tiledb_paths, profile_length)
 
     # Randomly samples from genome
     genome_sampler = GenomeIntervalSampler(
@@ -356,7 +360,7 @@ def data_loader_from_beds_and_bigwigs(
 
     # Dataset
     dataset = CoordDataset(
-        coords_batcher, coords_to_seq, coords_to_vals_list, revcomp=revcomp,
+        coords_batcher, coords_to_seq, coords_to_vals, revcomp=revcomp,
         return_coords=return_coords
     )
 
@@ -377,36 +381,27 @@ def main():
     import os
     import tqdm
 
-    base_path = "/users/amtseng/att_priors/data/processed/ENCODE/profile/labels"
+    base_path = "/users/amtseng/att_priors/data/processed/ENCODE/profile/SPI1/"
 
     peaks_bed_files = [
         os.path.join(base_path, ending) for ending in [
-            "SPI1/SPI1_ENCSR000BGQ_GM12878_holdout_peakints.bed.gz",
-            "SPI1/SPI1_ENCSR000BGW_K562_holdout_peakints.bed.gz",
-            "SPI1/SPI1_ENCSR000BIJ_GM12891_holdout_peakints.bed.gz",
-            "SPI1/SPI1_ENCSR000BUW_HL-60_holdout_peakints.bed.gz"
+            "tf_chipseq_peaks/SPI1_ENCSR000BGQ_GM12878_holdout_peakints.bed.gz",
+            "tf_chipseq_peaks/SPI1_ENCSR000BGW_K562_holdout_peakints.bed.gz",
+            "tf_chipseq_peaks/SPI1_ENCSR000BIJ_GM12891_holdout_peakints.bed.gz",
+            "tf_chipseq_peaks/SPI1_ENCSR000BUW_HL-60_holdout_peakints.bed.gz"
         ]
     ]
             
     profile_bigwig_files = [
-        (os.path.join(base_path, e_1), os.path.join(base_path, e_2)) \
-        for e_1, e_2 in [
-            ("SPI1/SPI1_ENCSR000BGQ_GM12878_neg.bw",
-            "SPI1/SPI1_ENCSR000BGQ_GM12878_pos.bw"),
-            ("SPI1/SPI1_ENCSR000BGW_K562_neg.bw",
-            "SPI1/SPI1_ENCSR000BGW_K562_pos.bw"),
-            ("SPI1/SPI1_ENCSR000BIJ_GM12891_neg.bw",
-            "SPI1/SPI1_ENCSR000BIJ_GM12891_pos.bw"),
-            ("SPI1/SPI1_ENCSR000BUW_HL-60_neg.bw",
-            "SPI1/SPI1_ENCSR000BUW_HL-60_pos.bw"),
-            ("SPI1/control_ENCSR000BGG_K562_neg.bw",
-            "SPI1/control_ENCSR000BGG_K562_pos.bw"),
-            ("SPI1/control_ENCSR000BGH_GM12878_neg.bw",
-            "SPI1/control_ENCSR000BGH_GM12878_pos.bw"),
-            ("SPI1/control_ENCSR000BIH_GM12891_neg.bw",
-            "SPI1/control_ENCSR000BIH_GM12891_pos.bw"),
-            ("SPI1/control_ENCSR000BVU_HL-60_neg.bw",
-            "SPI1/control_ENCSR000BVU_HL-60_pos.bw")
+        os.path.join(base_path, ending) for ending in [
+            "tf_chipseq_profiles/SPI1_ENCSR000BGQ_GM12878",
+            "tf_chipseq_profiles/SPI1_ENCSR000BGW_K562",
+            "tf_chipseq_profiles/SPI1_ENCSR000BIJ_GM12891",
+            "tf_chipseq_profiles/SPI1_ENCSR000BUW_HL-60",
+            "cont_chipseq_profiles/control_ENCSR000BGG_K562",
+            "cont_chipseq_profiles/control_ENCSR000BGH_GM12878",
+            "cont_chipseq_profiles/control_ENCSR000BIH_GM12891",
+            "cont_chipseq_profiles/control_ENCSR000BVU_HL-60"
         ]
     ]
 
@@ -425,7 +420,7 @@ def main():
     k = 2
     rc_k = int(len(data[0]) / 2) + k
 
-    seqs, profiles, counts, statuses = data
+    seqs, profiles, statuses = data
     
     seq, prof, status = seqs[k], profiles[k], statuses[k]
     rc_seq, rc_prof, rc_status = seqs[rc_k], profiles[rc_k], statuses[rc_k]
