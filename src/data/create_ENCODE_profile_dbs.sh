@@ -30,17 +30,13 @@ do
 done
 
 printf "Creating TF ChIP-seq database\n"
-db_ingest --tiledb_metadata $tftasklist \
+db_ingest_single_threaded --tiledb_metadata $tftasklist \
 	--tiledb_group $outdir/tf_chipseq_profiles \
 	--overwrite \
-	--chrom_sizes $chromsizes \
-	--chrom_threads 12 \
-	--write_threads 12
+	--chrom_sizes $chromsizes
 
 printf "Creating control ChIP-seq database\n"
-db_ingest --tiledb_metadata $conttasklist \
+db_ingest_single_threaded --tiledb_metadata $conttasklist \
 	--tiledb_group $outdir/cont_chipseq_profiles \
 	--overwrite \
-	--chrom_sizes $chromsizes \
-	--chrom_threads 12 \
-	--write_threads 12
+	--chrom_sizes $chromsizes
