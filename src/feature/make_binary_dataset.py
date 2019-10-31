@@ -50,8 +50,6 @@ class CoordsToVals():
             coordinates, with the extra columns being output values; coordinates
             are assumed to be on the positive strand
         `hastitle`: Whether or not the BED file has a header
-        `convert_states`: Whether or not the states need to be convered to
-            numerical values
     """
     def __init__(self, gzipped_bed_file, hastitle=False):
         self.gzipped_bed_file = gzipped_bed_file
@@ -337,7 +335,7 @@ def main():
     import os
     import tqdm
 
-    tfname = "CEBPB"
+    tfname = "SPI1"
 
     base_path = "/users/amtseng/att_priors/data/"
 
@@ -349,8 +347,7 @@ def main():
     print(tfname)
 
     loader = data_loader_from_bedfile(
-        bedfile, convert_states=False,
-        reference_fasta = "/users/amtseng/genomes/hg38.fasta"
+        bedfile, reference_fasta = "/users/amtseng/genomes/hg38.fasta"
     )
     loader.dataset.on_epoch_start()
     start_time = datetime.now()

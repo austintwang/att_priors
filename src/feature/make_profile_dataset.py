@@ -2,11 +2,26 @@ import torch
 import numpy as np
 import pandas as pd
 import sacred
-from datetime import datetime
 import tiledb
+import os
+import tqdm
 import feature.util as util
+import multiprocessing
+
+from datetime import datetime
 
 dataset_ex = sacred.Experiment("dataset")
+
+TILEDB_CONTEXT_CONFIG = tiledb.Config({
+    "sm.check_coord_dups": "false",
+    "sm.check_coord_oob": "false",
+    "sm.check_global_order": "false",
+    "sm.num_writer_threads": "100",
+    "sm.num_reader_threads": "100",
+    "sm.num_async_threads": "100",
+    "vfs.num_threads": "100",
+    "sm.memory_budget": "5000000000"
+})
 
 @dataset_ex.config
 def config():
@@ -38,7 +53,10 @@ def config():
     negative_ratio = 1
 
     # Number of workers for the data loader
-    num_workers = 10
+    num_workers = 0
+
+    # Whether or not to shuffle the peaks at the beginning of each epoch
+    shuffle = True
 
     # Dataset seed (for shuffling)
     dataset_seed = None
@@ -50,11 +68,11 @@ class GenomeIntervalSampler:
     uniformly at random (i.e. longer chromosomes are more likely to be sampled
     from).
     Arguments:
-        `chrom_sizes`: Path to 2-column TSV listing sizes of each chromosome
-        `sample_length`: Length of sampled sequence
-        `chroms_keep`: An iterable of chromosomes that specifies which
+        `chrom_sizes`: path to 2-column TSV listing sizes of each chromosome
+        `sample_length`: length of sampled sequence
+        `chroms_keep`: an iterable of chromosomes that specifies which
             chromosomes to keep from the sizes; sampling will only occur from
-            these chromosomes
+            these chromosomes; if not specified, then all chromosomes are valid
     """
     def __init__(self, chrom_sizes, sample_length, chroms_keep=None, seed=None):
         self.sample_length = sample_length
@@ -93,23 +111,27 @@ class CoordsToVals:
     """
     From the paths to several TileDB databases containing BigWig tracks, this
     creates an object that maps a list of coordinates to a NumPy array of
-    profiles. The profiles are returned as an S x 2 x L array, where S is the
-    number of provided paths, and L is the length of the returned profile (both
-    plus and minus strands are given, in that order).
+    profiles.
     Arguments:
-        `tiledb_paths`: List of TileDB databases, each split by chromosome
+        `tiledb_paths`: list of TileDB databases, each split by chromosome; each
+            one must have the keys "count_bigwig_plus_5p" and
+            "count_bigwig_plus_5p", referring to the raw counts of the 5' end of
+            reads
         `center_size_to_use`: For each genomic coordinate, center it and pad it
             on both sides to this length to get the final profile; if this is
             smaller than the coordinate interval given, then the interval will
             be cut to this size by centering
+    Returns an S x 2 x L array, where S is the number of provided paths, and L
+    is the length of the returned profile (both plus and minus strands are
+    given, in that order).
     """
     def __init__(self, tiledb_paths, center_size_to_use):
         self.tiledb_paths = tiledb_paths 
         self.center_size_to_use = center_size_to_use
 
-    def _get_profile(self, chrom, start, end, tiledb_context):
+    def _get_profile(self, chrom_arrays, start, end):
         """
-        Fetches the profeile for the given coordinates, with an instantiated
+        Fetches the profile for the given coordinates, with an instantiated
         TileDB Context. Returns the profile as a NumPy array of numbers. This
         may pad or cut from the center to a specified length.
         """
@@ -124,13 +146,17 @@ class CoordsToVals:
        
         # Read from each database
         profiles = []
-        for path in self.tiledb_paths:
-            shard_path = "%s.%s" % (path, chrom)
-            arr = tiledb.DenseArray(shard_path, mode="r", ctx=tiledb_context)
-            plus = arr[left:right]["count_bigwig_plus_5p"]
-            minus = np.flip(arr[left:right]["count_bigwig_minus_5p"])
+        for chrom_arr in chrom_arrays:
+            subarr = chrom_arr.subarray(
+                (slice(left, right),),
+                attrs=("count_bigwig_plus_5p", "count_bigwig_minus_5p"),
+                coords=False, order="C"
+            )
+            plus = subarr["count_bigwig_plus_5p"]
+            minus = subarr["count_bigwig_minus_5p"]
             profiles.append(np.stack([plus, minus]))
         return np.stack(profiles)
+
         
     def _get_ndarray(self, coords):
         """
@@ -140,12 +166,33 @@ class CoordsToVals:
         where N is the number of coordinates given, S is the number of TileDB
         databases given at instantiation, and L is the desired length.
         """
+        # Take the coordinates and group them by chromosome
+        coord_dict = {}
+        for chrom, start, end in coords:
+            try:
+                coord_dict[chrom].append((start, end))
+            except KeyError:
+                coord_dict[chrom] = [(start, end)]
+
         # To be thread-safe, create a new context
-        context = tiledb.Ctx()
-        return np.stack([
-            self._get_profile(chrom, start, end, context) \
-            for chrom, start, end in coords
-        ])
+        tiledb_context = tiledb.Ctx(config=TILEDB_CONTEXT_CONFIG)
+        profs = []
+
+        # For each chromosome, instantiate a DenseArray and read in the profiles
+        for chrom, ints in coord_dict.items():
+            chrom_arrays = [
+                tiledb.DenseArray(
+                    "%s.%s" % (path, chrom), mode="r", ctx=tiledb_context
+                ) for path in self.tiledb_paths
+            ]
+            # For each interval in the chromosome, fetch the profiles
+            for start, end in ints:
+                profs.append(self._get_profile(chrom_arrays, start, end))
+
+            for chrom_arr in chrom_arrays:
+                chrom_arr.close()
+
+        return np.stack(profs)
 
     def __call__(self, coords):
         return self._get_ndarray(coords)
@@ -158,19 +205,22 @@ class CoordsBatcher(torch.utils.data.sampler.Sampler):
     according to `neg_ratio`. When multiple sets of positive coordinates are
     given, the coordinates are all pooled together and drawn from uniformly.
     Arguments:
-        `pos_coords_beds`: List of paths to gzipped BED files containing the
-            sets of positive coordinates for various tasks
-        `batch_size`: Number of samples per batch
-        `neg_ratio`: Number of negatives to select for each positive example
-        `jitter`: Random amount to jitter each positive coordinate example by
-        `genome_sampler`: A GenomeIntervalSampler instance, which samples
+        `tf_tiledb_paths`: a list of paths, where each path refers to a single
+            task's database, sharded by chromosome; each shard contains an 
+            indication of where the peaks are, under the "idr_peak" key (summits
+            have a value of 2)
+        `chroms`: a list of chromosomes (e.g. "chr3", "chr7") to draw from
+        `batch_size`: number of samples per batch
+        `neg_ratio`: number of negatives to select for each positive example
+        `jitter`: random amount to jitter each positive coordinate example by
+        `genome_sampler`: a GenomeIntervalSampler instance, which samples
             intervals randomly from the genome
-        `shuffle_before_epoch`: Whether or not to shuffle all examples before
+        `shuffle_before_epoch`: whether or not to shuffle all examples before
             each epoch
     """
     def __init__(
-        self, pos_coords_beds, batch_size, neg_ratio, jitter, genome_sampler,
-        shuffle_before_epoch=False, seed=None
+        self, tf_tiledb_paths, chroms, batch_size, neg_ratio, jitter,
+        genome_sampler, shuffle_before_epoch=False, seed=None
     ):
         self.batch_size = batch_size
         self.neg_ratio = neg_ratio
@@ -178,18 +228,27 @@ class CoordsBatcher(torch.utils.data.sampler.Sampler):
         self.genome_sampler = genome_sampler
         self.shuffle_before_epoch = shuffle_before_epoch
 
+        # For each task, read in all positive coordinates
         # Read in the positive coordinates and make N x 4 array, where the
         # 4th column is the identifier of the source BED
+        tiledb_context = tiledb.Ctx(config=TILEDB_CONTEXT_CONFIG)
         pos_coords = []
-        for i, pos_coords_bed in enumerate(pos_coords_beds):
-            pos_coords_table = pd.read_csv(
-                pos_coords_bed, sep="\t", header=None, compression="gzip"
-            )
-            coords = pos_coords_table.values.astype(object)
-            coords = np.concatenate(
-                [coords, np.tile(i + 1, (len(coords), 1))], axis=1
-            )
-            pos_coords.append(coords)
+        print("Reading in peaks...")
+        for i, tf_tiledb_path in enumerate(tf_tiledb_paths):
+            tqdm_desc = "Task %d/%d" % (i + 1, len(tf_tiledb_paths))
+            for chrom in tqdm.tqdm(chroms, desc=tqdm_desc):
+                shard_path = "%s.%s" % (tf_tiledb_path, chrom)
+                with tiledb.DenseArray(
+                    shard_path, mode="r", ctx=tiledb_context
+                ) as arr:
+                    # Summits stored as 2
+                    summits = np.where(arr[:]["idr_peak"] == 2)[0]
+                chrom_rep = np.tile(chrom, len(summits))
+                index_rep = np.tile(i + 1, len(summits))
+                coords = np.transpose(np.stack([
+                    chrom_rep.astype(object), summits, summits + 1, index_rep
+                ]))
+                pos_coords.append(coords)
         self.pos_coords = np.concatenate(pos_coords)
 
         # Number of positives and negatives per batch
@@ -326,32 +385,60 @@ class CoordDataset(torch.utils.data.IterableDataset):
 
 
 @dataset_ex.capture
-def data_loader_from_beds_and_bigwigs(
-    peaks_bed_paths, profile_tiledb_paths, batch_size, reference_fasta,
+def create_data_loader(
+    tf_tiledb_paths, cont_tiledb_paths, chroms, batch_size, reference_fasta,
     chrom_sizes, input_length, profile_length, negative_ratio, num_workers,
-    revcomp, jitter_size, dataset_seed, shuffle=True, return_coords=False
+    revcomp, jitter_size, shuffle, dataset_seed, return_coords=False
 ):
     """
-    From a list of paths to gzipped BED files containing coordinates of positive
-    peaks, and a list of paired paths to BigWigs containing reads mapped to each
-    location in the genome, returns an IterableDataset object. Each entry in
-    `profile_bigwig_paths` needs to be a pair of two paths, corresponding to
-    the profile of the plus and minus strand, respectively. If `shuffle` is
-    True, shuffle the dataset before each epoch.
+    From a list of paths to TileDB databases sharded by chromosome, constructs
+    a data loader as an IterableDataset object.
+    Arguments:
+        `tf_tiledb_paths`: a list of paths, where each path refers to a single
+            task's database, sharded by chromosome; each shard contains the
+            profile counts for both strands, and an indication of where the peak
+            summits are; required keys in each shard: idr_peak,
+            count_bigwig_plus_5p, count_bigwig_minus_5p
+        `cont_tiledb_paths`: a parallel list of paths, where each path refers
+            to a single task's control database, sharded by chromosome; each
+            shard contains the profile counts for both strands; required keys in
+            each shard: count_bigwig_plus_5p, count_bigwig_minus_5p
+        `chroms`: a list of chromosomes (e.g. "chr3", "chr7") to draw from
+        `return_coords`: if True, each batch also returns the coordinates used
+            to generate the data
+    Returns a DataLoader object.
     """
     # Maps set of coordinates to profiles
-    coords_to_vals = CoordsToVals(profile_tiledb_paths, profile_length)
+    all_tiledb_paths = tf_tiledb_paths + cont_tiledb_paths
+    coords_to_vals = CoordsToVals(all_tiledb_paths, profile_length)
 
     # Randomly samples from genome
     genome_sampler = GenomeIntervalSampler(
-        chrom_sizes, input_length, seed=dataset_seed
+        chrom_sizes, input_length, chroms_keep=chroms, seed=dataset_seed
     )
-    
+   
     # Coordinate batcher, yielding batches of positive and negative coordinates
-    coords_batcher = CoordsBatcher(
-        peaks_bed_paths, batch_size, negative_ratio, jitter_size, genome_sampler,
-        shuffle_before_epoch=shuffle, seed=dataset_seed
-    )
+    # We need to have a separate process create the batcher, because the batcher
+    # utilizes TileDB in the __init__, and this somehow pollutes the process
+    # memory and breaks PyTorch's multiprocess data loader
+    def get_coordsbatcher(
+        tf_tiledb_paths, chroms, batch_size, negative_ratio, jitter_size,
+        genome_sampler, shuffle, dataset_seed, queue
+    ):
+        coords_batcher = CoordsBatcher(
+            tf_tiledb_paths, chroms, batch_size, negative_ratio, jitter_size,
+            genome_sampler, shuffle, dataset_seed
+        )
+        queue.put(coords_batcher)
+
+    queue = multiprocessing.Manager().Queue()
+    proc = multiprocessing.Process(target=get_coordsbatcher, args=(
+        tf_tiledb_paths, chroms, batch_size, negative_ratio, jitter_size,
+        genome_sampler, shuffle, dataset_seed, queue
+    ))
+    proc.start()
+    proc.join()
+    coords_batcher = queue.get()
 
     # Maps set of coordinates to 1-hot encoding, padded
     coords_to_seq = util.CoordsToSeq(
@@ -378,26 +465,20 @@ loader = None
 @dataset_ex.automain
 def main():
     global data, loader
-    import os
-    import tqdm
+    from datetime import datetime
 
     base_path = "/users/amtseng/att_priors/data/processed/ENCODE/profile/SPI1/"
 
-    peaks_bed_files = [
-        os.path.join(base_path, ending) for ending in [
-            "tf_chipseq_peaks/SPI1_ENCSR000BGQ_GM12878_holdout_peakints.bed.gz",
-            "tf_chipseq_peaks/SPI1_ENCSR000BGW_K562_holdout_peakints.bed.gz",
-            "tf_chipseq_peaks/SPI1_ENCSR000BIJ_GM12891_holdout_peakints.bed.gz",
-            "tf_chipseq_peaks/SPI1_ENCSR000BUW_HL-60_holdout_peakints.bed.gz"
-        ]
-    ]
-            
-    profile_bigwig_files = [
+    tf_tiledb_paths = [
         os.path.join(base_path, ending) for ending in [
             "tf_chipseq_profiles/SPI1_ENCSR000BGQ_GM12878",
             "tf_chipseq_profiles/SPI1_ENCSR000BGW_K562",
             "tf_chipseq_profiles/SPI1_ENCSR000BIJ_GM12891",
             "tf_chipseq_profiles/SPI1_ENCSR000BUW_HL-60",
+        ]
+    ]
+    cont_tiledb_paths = [
+        os.path.join(base_path, ending) for ending in [
             "cont_chipseq_profiles/control_ENCSR000BGG_K562",
             "cont_chipseq_profiles/control_ENCSR000BGH_GM12878",
             "cont_chipseq_profiles/control_ENCSR000BIH_GM12891",
@@ -405,39 +486,40 @@ def main():
         ]
     ]
 
-    loader = data_loader_from_beds_and_bigwigs(
-        peaks_bed_files, profile_bigwig_files,
+    chroms = ["chr%d" % i for i in range(1, 23)] + ["chrX"]
+
+    loader = create_data_loader(
+        tf_tiledb_paths, cont_tiledb_paths, chroms,
         reference_fasta="/users/amtseng/genomes/hg38.fasta"
     )
     loader.dataset.on_epoch_start()
     start_time = datetime.now()
     for batch in tqdm.tqdm(loader, total=len(loader.dataset)):
         data = batch
-        break
     end_time = datetime.now()
     print("Time: %ds" % (end_time - start_time).seconds)
 
-    k = 2
-    rc_k = int(len(data[0]) / 2) + k
+    # k = 2
+    # rc_k = int(len(data[0]) / 2) + k
 
-    seqs, profiles, statuses = data
-    
-    seq, prof, status = seqs[k], profiles[k], statuses[k]
-    rc_seq, rc_prof, rc_status = seqs[rc_k], profiles[rc_k], statuses[rc_k]
-    
-    print(util.one_hot_to_seq(seq))
-    print(util.one_hot_to_seq(rc_seq))
+    # seqs, profiles, statuses = data
+    # 
+    # seq, prof, status = seqs[k], profiles[k], statuses[k]
+    # rc_seq, rc_prof, rc_status = seqs[rc_k], profiles[rc_k], statuses[rc_k]
+    # 
+    # print(util.one_hot_to_seq(seq))
+    # print(util.one_hot_to_seq(rc_seq))
 
-    print(status, rc_status)
+    # print(status, rc_status)
 
-    import matplotlib.pyplot as plt
-    fig, ax = plt.subplots(2, 1)
-    task_ind = 3
-    ax[0].plot(prof[task_ind][0])
-    ax[0].plot(prof[task_ind][1])
+    # import matplotlib.pyplot as plt
+    # fig, ax = plt.subplots(2, 1)
+    # task_ind = 3
+    # ax[0].plot(prof[task_ind][0])
+    # ax[0].plot(prof[task_ind][1])
 
-    ax[1].plot(rc_prof[task_ind][0])
-    ax[1].plot(rc_prof[task_ind][1])
+    # ax[1].plot(rc_prof[task_ind][0])
+    # ax[1].plot(rc_prof[task_ind][1])
 
-    plt.show()
+    # plt.show()
     

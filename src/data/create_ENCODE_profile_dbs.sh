@@ -1,6 +1,6 @@
 tfname=$1
 indir=/users/amtseng/att_priors/data/interim/ENCODE/profile/$tfname/
-outdir=/users/amtseng/att_priors/data/processed/ENCODE/profile/$tfname/
+outdir=/users/amtseng/att_priors/data/processed/ENCODE/profile/$tfname/MULTI
 
 chromsizes=/users/amtseng/genomes/hg38.canon.chrom.sizes
 
@@ -30,13 +30,27 @@ do
 done
 
 printf "Creating TF ChIP-seq database\n"
-db_ingest_single_threaded --tiledb_metadata $tftasklist \
+db_ingest --tiledb_metadata $tftasklist \
 	--tiledb_group $outdir/tf_chipseq_profiles \
 	--overwrite \
-	--chrom_sizes $chromsizes
+	--chrom_sizes $chromsizes \
+	--chrom_threads 25 \
+	--tile_size 9000 \
+	--batch_size 1000000
+# db_ingest_single_threaded --tiledb_metadata $tftasklist \
+# 	--tiledb_group $outdir/tf_chipseq_profiles \
+# 	--overwrite \
+# 	--chrom_sizes $chromsizes
 
 printf "Creating control ChIP-seq database\n"
-db_ingest_single_threaded --tiledb_metadata $conttasklist \
+db_ingest --tiledb_metadata $conttasklist \
 	--tiledb_group $outdir/cont_chipseq_profiles \
 	--overwrite \
-	--chrom_sizes $chromsizes
+	--chrom_sizes $chromsizes \
+	--chrom_threads 25 \
+	--tile_size 9000 \
+	--batch_size 1000000
+# db_ingest_single_threaded --tiledb_metadata $conttasklist \
+# 	--tiledb_group $outdir/cont_chipseq_profiles \
+# 	--overwrite \
+# 	--chrom_sizes $chromsizes
