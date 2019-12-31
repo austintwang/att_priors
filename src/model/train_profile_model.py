@@ -55,7 +55,8 @@ def config(dataset):
     # Weight to use for attribution prior loss; set to 0 to not use att. priors
     att_prior_loss_weight = 200
 
-    # Annealing factor for attribution prior loss weight: e^(factor * epoch) - 1
+    # Annealing factor for attribution prior loss weight: e^(-factor * epoch);
+    # set to 0 for no annealing
     att_prior_loss_weight_anneal = 0.3
 
     # Smoothing amount for gradients before computing attribution prior loss;
@@ -179,7 +180,7 @@ def model_loss(
         att_prior_grad_smooth_sigma, return_separate_losses=True
     )
     weight = att_prior_loss_weight * \
-        (np.exp(att_prior_loss_weight_anneal * epoch_num) - 1)
+        np.exp(-att_prior_loss_weight_anneal * epoch_num)
     if att_prior_loss_only:
         final_loss = att_prior_loss
     else:
