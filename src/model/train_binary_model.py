@@ -90,6 +90,9 @@ def config(dataset):
     # to not soften; softness decays like 1 / (1 + x^c) after the limit
     fourier_att_prior_freq_limit_softness = 0.2
 
+    # Weight for L2 penalty on weights
+    l2_reg_loss_weight = 0
+
     # Number of training epochs
     num_epochs = 20
 
@@ -159,7 +162,7 @@ def model_loss(
     att_prior_loss_weight, att_prior_loss_weight_anneal_type,
     att_prior_loss_weight_anneal_speed, att_prior_grad_smooth_sigma,
     fourier_att_prior_freq_limit, fourier_att_prior_freq_limit_softness,
-    att_prior_loss_only, input_grads=None, status=None
+    att_prior_loss_only, l2_reg_loss_weight, input_grads=None, status=None
 ):
     """
     Computes the loss for the model.
@@ -207,6 +210,14 @@ def model_loss(
         final_loss = att_prior_loss
     else:
         final_loss = corr_loss + (weight * att_prior_loss)
+
+    # If necessary, add the L2 penalty
+    if l2_reg_loss_weight > 0:
+        l2_loss = util.place_tensor(torch.tensor(0).float())
+        for param in model.parameters():
+            if param.requires_grad_:
+                l2_loss = l2_loss + torch.sum(param * param)
+        final_loss = final_loss + (l2_reg_loss_weight * l2_loss)
 
     return final_loss, (corr_loss, att_prior_loss)
 
