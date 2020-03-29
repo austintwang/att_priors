@@ -188,28 +188,29 @@ def model_loss(
     corr_loss = model.correctness_loss(
         true_vals, logit_pred_vals, avg_class_loss
     )
+    final_loss = corr_loss
     
-    if not att_prior_loss_weight:
-        return corr_loss, (corr_loss, torch.zeros(1))
-   
-    att_prior_loss = model.fourier_att_prior_loss(
-        status, input_grads, fourier_att_prior_freq_limit,
-        fourier_att_prior_freq_limit_softness, att_prior_grad_smooth_sigma
-    )
-    
-    if att_prior_loss_weight_anneal_type is None:
-        weight = att_prior_loss_weight
-    elif att_prior_loss_weight_anneal_type == "inflate":
-        exp = np.exp(-att_prior_loss_weight_anneal_speed * epoch_num)
-        weight = att_prior_loss_weight * ((2 / (1 + exp)) - 1)
-    elif att_prior_loss_weight_anneal_type == "deflate":
-        exp = np.exp(-att_prior_loss_weight_anneal_speed * epoch_num)
-        weight = att_prior_loss_weight * exp
+    if att_prior_loss_weight > 0:
+        att_prior_loss = model.fourier_att_prior_loss(
+            status, input_grads, fourier_att_prior_freq_limit,
+            fourier_att_prior_freq_limit_softness, att_prior_grad_smooth_sigma
+        )
+        
+        if att_prior_loss_weight_anneal_type is None:
+            weight = att_prior_loss_weight
+        elif att_prior_loss_weight_anneal_type == "inflate":
+            exp = np.exp(-att_prior_loss_weight_anneal_speed * epoch_num)
+            weight = att_prior_loss_weight * ((2 / (1 + exp)) - 1)
+        elif att_prior_loss_weight_anneal_type == "deflate":
+            exp = np.exp(-att_prior_loss_weight_anneal_speed * epoch_num)
+            weight = att_prior_loss_weight * exp
 
-    if att_prior_loss_only:
-        final_loss = att_prior_loss
+        if att_prior_loss_only:
+            final_loss = att_prior_loss
+        else:
+            final_loss = final_loss + (weight * att_prior_loss)
     else:
-        final_loss = corr_loss + (weight * att_prior_loss)
+        att_prior_loss = torch.zeros(1)
 
     # If necessary, add the L2 penalty
     if l2_reg_loss_weight > 0:
