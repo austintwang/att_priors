@@ -46,7 +46,7 @@ def fetch_bigwig_paths(base_path, cell_type):
 
         paths[os.path.join(base_path, name)] = tokens.pop()
 
-    return sorted(paths, paths.get)
+    return sorted(paths, key=paths.get)
 
 
 def create_hdf5(
