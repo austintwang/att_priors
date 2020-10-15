@@ -721,13 +721,13 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
             out_channels=(num_tasks * num_strands),
             kernel_size=1, groups=num_tasks
         )
-        self.count_one_conv_4 = torch.nn.Conv1d(
-            in_channels=(num_tasks * 4 * num_strands),
-            out_channels=(num_tasks * num_strands),
-            kernel_size=1, groups=num_tasks
-        )
+        # self.count_one_conv_4 = torch.nn.Conv1d(
+        #     in_channels=(num_tasks * 4 * num_strands),
+        #     out_channels=(num_tasks * num_strands),
+        #     kernel_size=1, groups=num_tasks
+        # )
 
-        ptp_ins = [self.num_tasks * 2] + [self.prof_trans_conv_channels]
+        ptp_ins = [self.num_tasks] + [self.prof_trans_conv_channels]
         ptp_outs = [self.prof_trans_conv_channels] + [self.num_tasks]
 
         self.ptp_layers = {}
@@ -754,7 +754,7 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
             for name, param in v.named_parameters():
                 param.requires_grad = True
 
-    def forward(self, input_seqs, cont_profs, profs_trans, cont_profs_trans):
+    def forward(self, input_seqs, cont_profs, profs_trans):
         """
         Computes a forward pass on a batch of sequences.
         Arguments:
@@ -796,7 +796,7 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
         input_seqs = input_seqs.transpose(1, 2)  # Shape: B x D x I
         cont_profs = cont_profs.transpose(2, 3)  # Shape: B x T x S x O
         profs_trans = profs_trans.transpose(2, 3)  # Shape: B x T x S x O
-        cont_profs_trans = cont_profs_trans.transpose(2, 3)  # Shape: B x T x S x O
+        # cont_profs_trans = cont_profs_trans.transpose(2, 3)  # Shape: B x T x S x O
 
         # Prepare the control tracks: profiles and counts
         cont_counts = torch.sum(cont_profs, dim=3)  # Shape: B x T x 2
@@ -806,13 +806,13 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
             # B x T x 2 x O/B x T x 2
             cont_profs = torch.cat([cont_profs] * self.num_tasks, dim=1)
             cont_counts = torch.cat([cont_counts] * self.num_tasks, dim=1)
-            cont_profs_trans = torch.cat([cont_profs_trans] * self.num_tasks, dim=1)
-            cont_counts_trans = torch.cat([cont_counts_trans] * self.num_tasks, dim=1)
+            # cont_profs_trans = torch.cat([cont_profs_trans] * self.num_tasks, dim=1)
+            # cont_counts_trans = torch.cat([cont_counts_trans] * self.num_tasks, dim=1)
 
         counts_trans = torch.sum(profs_trans, dim=3)  # Shape: B x T x S
 
-        profs_trans_cat = torch.cat((profs_trans, cont_profs_trans), 1)
-        profs_trans_pred = self.ptp_conv(profs_trans_cat)
+        # profs_trans_cat = torch.cat((profs_trans, cont_profs_trans), 1)
+        profs_trans_pred = self.ptp_conv(profs_trans)
 
         # 1. Perform dilated convolutions on the input, each layer's input is
         # the sum of all previous layers' outputs
@@ -874,16 +874,16 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
         count_dense_out = count_dense_out.view(
             batch_size, self.num_tasks, num_strands
         )
-        count_with_cont = torch.cat([count_dense_out, cont_counts, counts_trans, cont_counts_trans], dim=2)
+        count_with_cont = torch.cat([count_dense_out, cont_counts, counts_trans], dim=2)
         # Shape: B x T x 4S
         count_with_cont = count_with_cont.view(
-            batch_size, self.num_tasks * 4 * num_strands, -1
+            batch_size, self.num_tasks * 3 * num_strands, -1
         )  # Shape: B x 4ST x 1
 
         # B4. Dense layer over the concatenation with control counts; each set
         # of counts gets a different dense network (implemented as convolution
         # with kernel size 1)
-        count_one_conv_out = self.count_one_conv_4(count_with_cont)
+        count_one_conv_out = self.count_one_conv_3(count_with_cont)
         # Shape: B x ST x 1
         count_pred = count_one_conv_out.view(
             batch_size, self.num_tasks, num_strands, -1

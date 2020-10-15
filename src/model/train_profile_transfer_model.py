@@ -26,43 +26,10 @@ train_ex.observers.append(
 def config(dataset):
     # Number of dilating convolutional layers to apply
     num_dil_conv_layers = 7
-    
-    # Size of dilating convolutional filters to apply
-    dil_conv_filter_sizes = [21] + ([3] * (num_dil_conv_layers - 1))
-
-    # Stride for dilating convolutional layers
-    dil_conv_stride = 1
 
     # Number of filters to use for each dilating convolutional layer (i.e.
     # number of channels to output)
-    dil_conv_depth = 64
-    dil_conv_depths = [dil_conv_depth] * num_dil_conv_layers
-
-    # Dilation values for each of the dilating convolutional layers
-    dil_conv_dilations = [2 ** i for i in range(num_dil_conv_layers)]
-
-    # Size of filter for large profile convolution
-    prof_conv_kernel_size = 75
-
-    # Stride for large profile convolution
-    prof_conv_stride = 1
-
-    # Number of prediction tasks
-    num_tasks = 4
-
-    # Number of strands; typically 1 (unstranded) or 2 (plus/minus strand)
-    num_strands = 2
-
-    # Type of control profiles (if any) to use in model; can be "matched" (each
-    # task has a matched control), "shared" (all tasks share a control), or
-    # None (no controls)
-    controls = "matched"
-
-    # Amount to weight the counts loss within the correctness loss
-    counts_loss_weight = 20
-
-    # Weight to use for attribution prior loss; set to 0 to not use att. priors
-    att_prior_loss_weight = 50
+    dil_conv_depth = params["dil_conv_depth"] = 64
 
     # Type of annealing; can be None (constant/no annealing), "inflate" (follows
     # `2/(1 + e^(-c*x)) - 1`), or "deflate" (follows `e^(-c * x)`)
@@ -76,55 +43,206 @@ def config(dataset):
     elif att_prior_loss_weight_anneal_type == "deflate":
         att_prior_loss_weight_anneal_speed = 0.3
 
-    # Smoothing amount for gradients before computing attribution prior loss;
-    # Smoothing window size is 1 + (2 * sigma); set to 0 for no smoothing
-    att_prior_grad_smooth_sigma = 3
+    params = {
+        # Number of dilating convolutional layers to apply
+        "num_dil_conv_layers": num_dil_conv_layers,
 
-    # Maximum frequency integer to consider for a Fourier attribution prior
-    fourier_att_prior_freq_limit = 200
+        # Size of dilating convolutional filters to apply
+        "dil_conv_filter_sizes": [21] + ([3] * (num_dil_conv_layers - 1)),
 
-    # Amount to soften the Fourier attribution prior loss limit; set to None
-    # to not soften; softness decays like 1 / (1 + x^c) after the limit
-    fourier_att_prior_freq_limit_softness = 0.2
+        # Stride for dilating convolutional layers
+        "dil_conv_stride": 1,
 
-    # Number of training epochs
-    num_epochs = 20
+        # Number of filters to use for each dilating convolutional layer (i.e.
+        # number of channels to output)
+        "dil_conv_depth": dil_conv_depth,
+        "dil_conv_depths": [dil_conv_depth] * num_dil_conv_layers,
 
-    # Learning rate
-    learning_rate = 0.001
+        # Dilation values for each of the dilating convolutional layers
+        "dil_conv_dilations": [2 ** i for i in range(num_dil_conv_layers)],
 
-    # Whether or not to use early stopping
-    early_stopping = True
+        # Size of filter for large profile convolution
+        "prof_conv_kernel_size": 75,
 
-    # Number of epochs to save validation loss (set to 1 for one step only)
-    early_stop_hist_len = 3
+        # Stride for large profile convolution
+        "prof_conv_stride": 1,
 
-    # Minimum improvement in loss at least once over history to not stop early
-    early_stop_min_delta = 0.001
+        # Number of prediction tasks
+        "num_tasks": 4,
 
-    # Training seed
-    train_seed = None
+        # Number of strands; typically 1 (unstranded) or 2 (plus/minus strand)
+        "num_strands": 2,
 
-    # If set, ignore correctness loss completely
-    att_prior_loss_only = False
+        # Type of control profiles (if any) to use in model; can be "matched" (each
+        # task has a matched control), "shared" (all tasks share a control), or
+        # None (no controls)
+        "controls": "matched",
 
-    # Imported from make_profile_dataset
-    batch_size = dataset["batch_size"]
+        # Amount to weight the counts loss within the correctness loss
+        "counts_loss_weight": 20,
 
-    # Imported from make_profile_dataset
-    revcomp = dataset["revcomp"]
+        # Weight to use for attribution prior loss; set to 0 to not use att. priors
+        "att_prior_loss_weight": 50,
 
-    # Imported from make_profile_dataset
-    input_length = dataset["input_length"]
+        # Type of annealing; can be None (constant/no annealing), "inflate" (follows
+        # `2/(1 + e^(-c*x)) - 1`), or "deflate" (follows `e^(-c * x)`)
+        "att_prior_loss_weight_anneal_type": att_prior_loss_weight_anneal_type,
+
+        # Annealing factor for attribution prior loss weight, c
+        "att_prior_loss_weight_anneal_speed": att_prior_loss_weight_anneal_speed,
+
+        # Smoothing amount for gradients before computing attribution prior loss;
+        # Smoothing window size is 1 + (2 * sigma); set to 0 for no smoothing
+        "att_prior_grad_smooth_sigma": 3,
+
+        # Maximum frequency integer to consider for a Fourier attribution prior
+        "fourier_att_prior_freq_limit": 200,
+
+        # Amount to soften the Fourier attribution prior loss limit; set to None
+        # to not soften; softness decays like 1 / (1 + x^c) after the limit
+        "fourier_att_prior_freq_limit_softness": 0.2,
+
+        # Number of training epochs
+        "num_epochs": 20,
+
+        # Learning rate
+        "learning_rate": 0.001,
+
+        # Whether or not to use early stopping
+        "early_stopping": True,
+
+        # Number of epochs to save validation loss (set to 1 for one step only)
+        "early_stop_hist_len": 3,
+
+        # Minimum improvement in loss at least once over history to not stop early
+        "early_stop_min_delta": 0.001,
+
+        # Training seed
+        "train_seed": None,
+
+        # If set, ignore correctness loss completely
+        "att_prior_loss_only": False,
+
+        # Imported from make_profile_dataset
+        "batch_size": dataset["batch_size"],
+
+        # Imported from make_profile_dataset
+        "revcomp": dataset["revcomp"],
+
+        # Imported from make_profile_dataset
+        "input_length": dataset["input_length"],
+        
+        # Imported from make_profile_dataset
+        "input_depth": dataset["input_depth"],
+
+        # Imported from make_profile_dataset
+        "profile_length": dataset["profile_length"],
+        
+        # Imported from make_profile_dataset
+        "negative_ratio": dataset["negative_ratio"],
+    }
+
+    # # Number of dilating convolutional layers to apply
+    # num_dil_conv_layers = params["num_dil_conv_layers"] = 7
     
-    # Imported from make_profile_dataset
-    input_depth = dataset["input_depth"]
+    # # Size of dilating convolutional filters to apply
+    # params["dil_conv_filter_sizes"] = [21] + ([3] * (num_dil_conv_layers - 1))
 
-    # Imported from make_profile_dataset
-    profile_length = dataset["profile_length"]
+    # # Stride for dilating convolutional layers
+    # params["dil_conv_stride"] = 1
+
+    # # Number of filters to use for each dilating convolutional layer (i.e.
+    # # number of channels to output)
+    # dil_conv_depth = params["dil_conv_depth"] = 64
+    # params["dil_conv_depths"] = [dil_conv_depth] * num_dil_conv_layers
+
+    # # Dilation values for each of the dilating convolutional layers
+    # params["dil_conv_dilations"] = [2 ** i for i in range(num_dil_conv_layers)]
+
+    # # Size of filter for large profile convolution
+    # prof_conv_kernel_size = 75
+
+    # # Stride for large profile convolution
+    # prof_conv_stride = 1
+
+    # # Number of prediction tasks
+    # num_tasks = 4
+
+    # # Number of strands; typically 1 (unstranded) or 2 (plus/minus strand)
+    # num_strands = 2
+
+    # # Type of control profiles (if any) to use in model; can be "matched" (each
+    # # task has a matched control), "shared" (all tasks share a control), or
+    # # None (no controls)
+    # controls = "matched"
+
+    # # Amount to weight the counts loss within the correctness loss
+    # counts_loss_weight = 20
+
+    # # Weight to use for attribution prior loss; set to 0 to not use att. priors
+    # att_prior_loss_weight = 50
+
+    # # Type of annealing; can be None (constant/no annealing), "inflate" (follows
+    # # `2/(1 + e^(-c*x)) - 1`), or "deflate" (follows `e^(-c * x)`)
+    # att_prior_loss_weight_anneal_type = None
+
+    # # Annealing factor for attribution prior loss weight, c
+    # if att_prior_loss_weight_anneal_type is None:
+    #     att_prior_loss_weight_anneal_speed = None
+    # elif att_prior_loss_weight_anneal_type == "inflate":
+    #     att_prior_loss_weight_anneal_speed = 1
+    # elif att_prior_loss_weight_anneal_type == "deflate":
+    #     att_prior_loss_weight_anneal_speed = 0.3
+
+    # # Smoothing amount for gradients before computing attribution prior loss;
+    # # Smoothing window size is 1 + (2 * sigma); set to 0 for no smoothing
+    # att_prior_grad_smooth_sigma = 3
+
+    # # Maximum frequency integer to consider for a Fourier attribution prior
+    # fourier_att_prior_freq_limit = 200
+
+    # # Amount to soften the Fourier attribution prior loss limit; set to None
+    # # to not soften; softness decays like 1 / (1 + x^c) after the limit
+    # fourier_att_prior_freq_limit_softness = 0.2
+
+    # # Number of training epochs
+    # num_epochs = 20
+
+    # # Learning rate
+    # learning_rate = 0.001
+
+    # # Whether or not to use early stopping
+    # early_stopping = True
+
+    # # Number of epochs to save validation loss (set to 1 for one step only)
+    # early_stop_hist_len = 3
+
+    # # Minimum improvement in loss at least once over history to not stop early
+    # early_stop_min_delta = 0.001
+
+    # # Training seed
+    # train_seed = None
+
+    # # If set, ignore correctness loss completely
+    # att_prior_loss_only = False
+
+    # # Imported from make_profile_dataset
+    # batch_size = dataset["batch_size"]
+
+    # # Imported from make_profile_dataset
+    # revcomp = dataset["revcomp"]
+
+    # # Imported from make_profile_dataset
+    # input_length = dataset["input_length"]
     
-    # Imported from make_profile_dataset
-    negative_ratio = dataset["negative_ratio"]
+    # # Imported from make_profile_dataset
+    # input_depth = dataset["input_depth"]
+
+    # # Imported from make_profile_dataset
+    # profile_length = dataset["profile_length"]
+    
+    # # Imported from make_profile_dataset
+    # negative_ratio = dataset["negative_ratio"]
 
 
 @train_ex.capture
@@ -295,7 +413,7 @@ def run_epoch(
 
         if att_prior_loss_weight > 0:
             input_seqs.requires_grad = True  # Set gradient required
-            logit_pred_profs, log_pred_counts = model(input_seqs, cont_profs, tf_profs_trans, cont_profs_trans)
+            logit_pred_profs, log_pred_counts = model(input_seqs, cont_profs, tf_profs_trans)
 
             # Subtract mean along output profile dimension; this wouldn't change
             # softmax probabilities, but normalizes the magnitude of gradients
@@ -327,7 +445,7 @@ def run_epoch(
             status[status != 0] = 1  # Set to 1 if not negative example
             input_seqs.requires_grad = False  # Reset gradient required
         else:
-            logit_pred_profs, log_pred_counts = model(input_seqs, cont_profs, tf_profs_trans, cont_profs_trans)
+            logit_pred_profs, log_pred_counts = model(input_seqs, cont_profs, tf_profs_trans)
             status, input_grads = None, None
 
         loss, (corr_loss, att_loss), (prof_loss, count_loss) = model_loss(
@@ -615,7 +733,7 @@ def main():
         splits_json["1"]["test"]
 
     bed_dir = "/mnt/lab_data2/amtseng/share/austin/dnase"
-    hdf5_dir = "/mnt/lab_data2/amtseng/att_priors/data/processed/ENCODE_DNase/profile/labels"
+    hdf5_dir = "/mnt/lab_data2/atwang/att_priors/data/processed/ENCODE_DNase/profile/labels"
 
     cell_types = ["K562", "HepG2"]
 
