@@ -22,17 +22,31 @@ def fetch_bigwig_paths(base_path, cell_type):
         item for item in os.listdir(base_path) if item.endswith(".bw")
     ]
 
-    paths = []
+    paths = {}
     for name in bigwig_list:
-        tokens = name[:-3].split("_")
-        assert len(tokens) == 2, \
-            "Found BigWig of improperly formatted name: %s" % name
+        # tokens = name[:-3].split("_")
+        # assert len(tokens) == 2, \
+        #     "Found BigWig of improperly formatted name: %s" % name
         
-        cond, expid = tokens
-        assert cond == cell_type, "Found BigWig not of cell type %s" % cell_type
-        paths.append(os.path.join(base_path, name))
+        # cond, expid = tokens
+        # assert cond == cell_type, "Found BigWig not of cell type %s" % cell_type
 
-    return paths
+        tokens = set(name[:-3].split("_"))
+
+        tokens.discard("DNase")
+        try:
+            tokens.remove(cell_type)
+        except KeyError:
+            print(f"Found BigWig not of cell type {cell_type}")
+            continue
+
+        if len(tokens) != 1:
+            print(f"Found BigWig of improperly formatted {name}")
+            continue
+
+        paths[os.path.join(base_path, name)] = tokens.pop()
+
+    return sorted(paths, paths.get)
 
 
 def create_hdf5(

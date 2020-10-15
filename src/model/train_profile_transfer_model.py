@@ -615,7 +615,7 @@ def main():
         splits_json["1"]["test"]
 
     bed_dir = "/mnt/lab_data2/amtseng/share/austin/dnase"
-    hdf5_dir = "/users/atwang/att_priors/data/processed/ENCODE_DNase/profile/labels"
+    hdf5_dir = "/mnt/lab_data2/amtseng/att_priors/data/processed/ENCODE_DNase/profile/labels"
 
     cell_types = ["K562", "HepG2"]
 

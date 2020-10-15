@@ -1,0 +1,1 @@
+python3 create_ENCODE_DNase_profile_hdf5.py -t K562 -b /mnt/lab_data2/amtseng/share/austin/dnase -r /mnt/lab_data2/amtseng/share/austin/dnase/DNase_SRR1565781_bias.bw -o /mnt/lab_data2/amtseng/att_priors/data/processed/ENCODE_DNase/profile/labels/K562/K562_profiles.h5
