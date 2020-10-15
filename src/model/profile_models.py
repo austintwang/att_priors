@@ -697,3 +697,206 @@ def profile_logits_to_log_probs(logit_pred_profs, axis=2):
             scipy.special.logsumexp(logit_pred_profs, axis=axis, keepdims=True)
     else:
         return torch.log_softmax(logit_pred_profs, dim=axis)
+
+
+class ProfilePredictorWithControlsKwargs(ProfilePredictorWithControls):
+    def __init__(self, **kwargs):  
+        keys = [
+            "input_length", "input_depth", "profile_length", "num_tasks", "num_strands",
+            "num_dil_conv_layers", "dil_conv_filter_sizes", "dil_conv_stride",
+            "dil_conv_dilations", "dil_conv_depths", "prof_conv_kernel_size",
+            "prof_conv_stride", "share_controls"
+        ]
+        args = [kwargs[k] for k in keys]
+        super().__init__(*args)
+
+class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.prof_trans_conv_kernel_size = kwargs["prof_trans_conv_kernel_size"]
+        self.prof_trans_conv_channels = kwargs["prof_trans_conv_channels"]
+
+        self.count_one_conv_3 = torch.nn.Conv1d(
+            in_channels=(num_tasks * 3 * num_strands),
+            out_channels=(num_tasks * num_strands),
+            kernel_size=1, groups=num_tasks
+        )
+        self.count_one_conv_4 = torch.nn.Conv1d(
+            in_channels=(num_tasks * 4 * num_strands),
+            out_channels=(num_tasks * num_strands),
+            kernel_size=1, groups=num_tasks
+        )
+
+        ptp_ins = [self.num_tasks * 2] + [self.prof_trans_conv_channels]
+        ptp_outs = [self.prof_trans_conv_channels] + [self.num_tasks]
+
+        self.ptp_layers = {}
+
+        ptp_conv_layers = []
+        for i, j in zip(ptp_ins, ptp_outs):
+            ptp_conv_layers.extend([
+                torch.nn.Conv1d(
+                    in_channels=i,
+                    out_channels=j,
+                    kernel_size=self.prof_conv_kernel_size
+                ),
+                torch.nn.ReLU(),
+            ])
+        self.ptp_conv = self.ptp_layers["ptp_conv"] = torch.nn.Sequential(*ptp_conv_layers)
+
+    def freeze_ptp_layers(self):
+        for k, v in ptp_layers.items():
+            for name, param in v.named_parameters():
+                param.requires_grad = False
+
+    def unfreeze_ptp_layers(self):
+        for k, v in ptp_layers.items():
+            for name, param in v.named_parameters():
+                param.requires_grad = True
+
+    def forward(self, input_seqs, cont_profs, profs_trans, cont_profs_trans):
+        """
+        Computes a forward pass on a batch of sequences.
+        Arguments:
+            `inputs_seqs`: a B x I x D tensor, where B is the batch size, I is
+                the input sequence length, and D is the number of input channels
+            `cont_profs`: if `share_controls` is True, this must be a
+                B x 1 x O x S tensor, where O is the output sequence length and
+                S is the number of strands; otherwise, controls are matched, and
+                this must be a B x T x O x S tensor, where T is the number of
+                tasks
+            `prof_trans`: B x T x O x S tensor
+            `cont_profs_trans`: if `share_controls` is True, this must be a
+                B x 1 x O x S tensor, where O is the output sequence length and
+                S is the number of strands; otherwise, controls are matched, and
+                this must be a B x T x O x S tensor, where T is the number of
+                tasks
+        Returns the predicted profiles (unnormalized logits) for each task and
+        each strand (a B x T x O x S tensor), and the predicted log counts (base
+        e) for each task and each strand (a B x T x S) tensor.
+        """
+        batch_size = input_seqs.size(0)
+        input_length = input_seqs.size(1)
+        assert input_length == self.input_length
+        if self.share_controls:
+            assert cont_profs.size(1) == 1
+            assert cont_profs_trans.size(1) == 1
+        else:
+            assert cont_profs.size(1) == self.num_tasks
+            assert cont_profs_trans.size(1) == self.num_tasks
+        profile_length = cont_profs.size(2)
+        profile_length_trans = cont_profs_trans.size(2)
+        assert profile_length == self.profile_length
+        assert profile_length_trans == self.profile_length
+        num_strands = cont_profs.size(3)
+        assert num_strands == self.num_strands
+
+        # PyTorch prefers convolutions to be channel first, so transpose the
+        # input and control profiles
+        input_seqs = input_seqs.transpose(1, 2)  # Shape: B x D x I
+        cont_profs = cont_profs.transpose(2, 3)  # Shape: B x T x S x O
+        profs_trans = profs_trans.transpose(2, 3)  # Shape: B x T x S x O
+        cont_profs_trans = cont_profs_trans.transpose(2, 3)  # Shape: B x T x S x O
+
+        # Prepare the control tracks: profiles and counts
+        cont_counts = torch.sum(cont_profs, dim=3)  # Shape: B x T x 2
+        cont_counts_trans = torch.sum(cont_profs_trans, dim=3)  # Shape: B x T x 2
+        if self.share_controls:
+            # Replicate the the profiles/counts from B x 1 x 2 x O/B x 1 x 2 to
+            # B x T x 2 x O/B x T x 2
+            cont_profs = torch.cat([cont_profs] * self.num_tasks, dim=1)
+            cont_counts = torch.cat([cont_counts] * self.num_tasks, dim=1)
+            cont_profs_trans = torch.cat([cont_profs_trans] * self.num_tasks, dim=1)
+            cont_counts_trans = torch.cat([cont_counts_trans] * self.num_tasks, dim=1)
+
+        counts_trans = torch.sum(profs_trans, dim=3)  # Shape: B x T x S
+
+        profs_trans_cat = torch.cat((profs_trans, cont_profs_trans), 1)
+        profs_trans_pred = self.ptp_conv(profs_trans_cat)
+
+        # 1. Perform dilated convolutions on the input, each layer's input is
+        # the sum of all previous layers' outputs
+        dil_conv_out_list = None
+        dil_conv_sum = 0
+        for i, dil_conv in enumerate(self.dil_convs):
+            if i == 0:
+                dil_conv_out = self.relu(dil_conv(input_seqs))
+            else:
+                dil_conv_out = self.relu(dil_conv(dil_conv_sum))
+
+            if i != self.num_dil_conv_layers - 1:
+                dil_conv_sum = dil_conv_out + dil_conv_sum
+
+        # 2. Truncate the final dilated convolutional layer output so that it
+        # only has entries that did not see padding; this is equivalent to
+        # truncating it to the size it would be if no padding were ever added
+        start = int((dil_conv_out.size(2) - self.last_dil_conv_size) / 2)
+        end = start + self.last_dil_conv_size
+        dil_conv_out_cut = dil_conv_out[:, :, start : end]
+
+        # Branch A: profile prediction
+        # A1. Perform convolution with a large kernel
+        prof_large_conv_out = self.prof_large_conv(dil_conv_out_cut)
+        # Shape: B x ST x O
+
+        # A2. Concatenate with the control profiles
+        # Reshaping is necessary to ensure the tasks are paired adjacently
+        prof_large_conv_out = prof_large_conv_out.view(
+            batch_size, self.num_tasks, num_strands, -1
+        )
+        prof_with_cont = torch.cat([prof_large_conv_out, cont_profs, profs_trans_pred], dim=2)
+        # Shape: B x T x 3S x O
+        prof_with_cont = prof_with_cont.view(
+            batch_size, self.num_tasks * 3 * num_strands, -1
+        )
+
+        # A3. Perform length-1 convolutions over the concatenated profiles with
+        # controls; there are T convolutions, each one is done over one pair of
+        # prof_first_conv_out, and a pair of controls
+        prof_one_conv_out = self.prof_one_conv_3(prof_with_cont)
+        # Shape: B x ST x O
+        prof_pred = prof_one_conv_out.view(
+            batch_size, self.num_tasks, num_strands, -1
+        )
+        # Transpose profile predictions to get B x T x O x S
+        prof_pred = prof_pred.transpose(2, 3)
+        
+        # Branch B: read count prediction
+        # B1. Global average pooling across the output of dilated convolutions
+        count_pool_out = self.count_pool(dil_conv_out_cut)  # Shape: B x X x 1
+        count_pool_out = torch.squeeze(count_pool_out, dim=2)
+
+        # B2. Reduce pooling output to fewer features, a pair for each task
+        count_dense_out = self.count_dense(count_pool_out)  # Shape: B x ST
+
+        # B3. Concatenate with the control counts
+        # Reshaping is necessary to ensure the tasks are paired adjacently
+        count_dense_out = count_dense_out.view(
+            batch_size, self.num_tasks, num_strands
+        )
+        count_with_cont = torch.cat([count_dense_out, cont_counts, counts_trans, cont_counts_trans], dim=2)
+        # Shape: B x T x 4S
+        count_with_cont = count_with_cont.view(
+            batch_size, self.num_tasks * 4 * num_strands, -1
+        )  # Shape: B x 4ST x 1
+
+        # B4. Dense layer over the concatenation with control counts; each set
+        # of counts gets a different dense network (implemented as convolution
+        # with kernel size 1)
+        count_one_conv_out = self.count_one_conv_4(count_with_cont)
+        # Shape: B x ST x 1
+        count_pred = count_one_conv_out.view(
+            batch_size, self.num_tasks, num_strands, -1
+        )
+        # Shape: B x T x S x 1
+        count_pred = torch.squeeze(count_pred, dim=3)  # Shape: B x T x S
+
+        return prof_pred, count_pred
+
+
+
+
+
+
+
+
