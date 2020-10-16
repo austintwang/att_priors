@@ -25,7 +25,7 @@ train_ex.observers.append(
 
 @train_ex.config
 def config(dataset_transfer):
-    controls = params["controls"] = "matched"
+    controls = "matched"
 
     # Number of dilating convolutional layers to apply
     num_dil_conv_layers = 7
