@@ -44,6 +44,8 @@ def config(dataset):
         att_prior_loss_weight_anneal_speed = 0.3
 
     params = {
+        "gpu_id": "1",
+
         # Number of dilating convolutional layers to apply
         "num_dil_conv_layers": num_dil_conv_layers,
 
@@ -544,7 +546,7 @@ def train_model(
     if train_seed:
         torch.manual_seed(train_seed)
 
-    device = torch.device("cuda") if torch.cuda.is_available() \
+    device = torch.device(f"cuda:{params["gpu_id"]}") if torch.cuda.is_available() \
         else torch.device("cpu")
 
     model = create_model(**params)
