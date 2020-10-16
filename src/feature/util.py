@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from pyfaidx import Fasta
 import simdna.synthetic
-import simdna.pwm
+import simdna
 import os
 import tempfile
 
