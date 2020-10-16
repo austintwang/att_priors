@@ -49,6 +49,9 @@ def config(dataset_transfer):
     params = {
         "gpu_id": "1",
 
+        "prof_trans_conv_kernel_size": 4,
+        "prof_trans_conv_channels": [10],
+
         # Number of dilating convolutional layers to apply
         "num_dil_conv_layers": num_dil_conv_layers,
 
