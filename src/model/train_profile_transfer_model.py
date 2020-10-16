@@ -8,6 +8,7 @@ import model.util as util
 import model.profile_models as profile_models
 import model.profile_performance as profile_performance
 import feature.make_profile_dataset as make_profile_dataset
+import feature.make_profile_transfer_dataset as make_profile_transfer_dataset
 
 MODEL_DIR = os.environ.get(
     "MODEL_DIR",
