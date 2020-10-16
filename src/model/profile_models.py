@@ -717,8 +717,8 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
         self.prof_trans_conv_channels = kwargs["prof_trans_conv_channels"]
 
         self.count_one_conv_3 = torch.nn.Conv1d(
-            in_channels=(num_tasks * 3 * num_strands),
-            out_channels=(num_tasks * num_strands),
+            in_channels=(self.num_tasks * 3 * self.num_strands),
+            out_channels=(self.num_tasks * self.num_strands),
             kernel_size=1, groups=num_tasks
         )
         # self.count_one_conv_4 = torch.nn.Conv1d(
