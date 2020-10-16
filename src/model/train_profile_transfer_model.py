@@ -546,7 +546,7 @@ def train_model(
     if train_seed:
         torch.manual_seed(train_seed)
 
-    device = torch.device(f"cuda:{params["gpu_id"]}") if torch.cuda.is_available() \
+    device = torch.device(f"cuda:{params['gpu_id']}") if torch.cuda.is_available() \
         else torch.device("cpu")
 
     model = create_model(**params)
