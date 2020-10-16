@@ -94,7 +94,7 @@ class GenomeIntervalSampler:
         Returns a Pandas DataFrame
         """
         return pd.read_csv(
-            chrom_sizes_tsv, sep="\t", header=None, names=["chrom", "max_size"]
+            chrom_sizes_tsv, sep="\t", header=None, names=["chrom", "max_size"], engine='python'
         )
 
     def sample_intervals(self, num_intervals):
