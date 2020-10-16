@@ -24,7 +24,7 @@ train_ex.observers.append(
 )
 
 @train_ex.config
-def config(dataset):
+def config(dataset_transfer):
     # Number of dilating convolutional layers to apply
     num_dil_conv_layers = 7
 
@@ -127,22 +127,22 @@ def config(dataset):
         "att_prior_loss_only": False,
 
         # Imported from make_profile_dataset
-        "batch_size": dataset["batch_size"],
+        "batch_size": dataset_transfer["batch_size"],
 
         # Imported from make_profile_dataset
-        "revcomp": dataset["revcomp"],
+        "revcomp": dataset_transfer["revcomp"],
 
         # Imported from make_profile_dataset
-        "input_length": dataset["input_length"],
+        "input_length": dataset_transfer["input_length"],
         
         # Imported from make_profile_dataset
-        "input_depth": dataset["input_depth"],
+        "input_depth": dataset_transfer["input_depth"],
 
         # Imported from make_profile_dataset
-        "profile_length": dataset["profile_length"],
+        "profile_length": dataset_transfer["profile_length"],
         
         # Imported from make_profile_dataset
-        "negative_ratio": dataset["negative_ratio"],
+        "negative_ratio": dataset_transfer["negative_ratio"],
     }
 
     # # Number of dilating convolutional layers to apply
