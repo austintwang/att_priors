@@ -746,5 +746,5 @@ def main():
             hdf5_path_to = os.path.join(hdf5_dir, f"{i}/{i}_profiles.h5")
             hdf5_path_from = os.path.join(hdf5_dir, f"{j}/{j}_profiles.h5")
             run_training(
-                bed_path, hdf5_path_to, hdf5_path_from, train_chroms, val_chroms, test_chroms, f"{i}_from_{j}"
+                [bed_path], hdf5_path_to, hdf5_path_from, train_chroms, val_chroms, test_chroms, f"{i}_from_{j}"
             )
