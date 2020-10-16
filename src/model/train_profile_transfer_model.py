@@ -25,6 +25,8 @@ train_ex.observers.append(
 
 @train_ex.config
 def config(dataset_transfer):
+    controls = params["controls"] = "matched"
+
     # Number of dilating convolutional layers to apply
     num_dil_conv_layers = 7
 
@@ -79,7 +81,8 @@ def config(dataset_transfer):
         # Type of control profiles (if any) to use in model; can be "matched" (each
         # task has a matched control), "shared" (all tasks share a control), or
         # None (no controls)
-        "controls": "matched",
+        "controls": controls,
+        "share_controls": controls == "shared",
 
         # Amount to weight the counts loss within the correctness loss
         "counts_loss_weight": 20,
