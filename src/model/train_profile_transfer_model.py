@@ -108,6 +108,8 @@ def config(dataset_transfer):
         # Number of training epochs
         "num_epochs": 20,
 
+        "num_epochs_prof": 5,
+
         # Learning rate
         "learning_rate": 0.001,
 
