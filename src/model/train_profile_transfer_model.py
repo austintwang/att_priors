@@ -738,13 +738,16 @@ def main():
     bed_dir = "/mnt/lab_data2/amtseng/share/austin/dnase"
     hdf5_dir = "/mnt/lab_data2/atwang/att_priors/data/processed/ENCODE_DNase/profile/labels"
 
-    cell_types = ["K562", "HepG2"]
+    cell_types = {
+        "K562": ["ENCSR000EOT"],
+        "HepG2": ["ENCSR149XIL"]
+    }
 
-    for i in cell_types:
-        for j in cell_types:
-            bed_path = os.path.join(bed_dir, f"DNase_ENCSR000EMT_{i}_idr-optimal-peaks.bed.gz")
+    for i, i_ex in cell_types.items():
+        for j, j_ex in cell_types.items():
+            bed_paths = [os.path.join(bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in i_ex]
             hdf5_path_to = os.path.join(hdf5_dir, f"{i}/{i}_profiles.h5")
             hdf5_path_from = os.path.join(hdf5_dir, f"{j}/{j}_profiles.h5")
             run_training(
-                [bed_path], hdf5_path_to, hdf5_path_from, train_chroms, val_chroms, test_chroms, f"{i}_from_{j}"
+                bed_paths, hdf5_path_to, hdf5_path_from, train_chroms, val_chroms, test_chroms, f"{i}_from_{j}"
             )
