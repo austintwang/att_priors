@@ -30,7 +30,7 @@ def config(dataset_transfer):
 
     # Number of filters to use for each dilating convolutional layer (i.e.
     # number of channels to output)
-    dil_conv_depth = params["dil_conv_depth"] = 64
+    dil_conv_depth = 64
 
     # Type of annealing; can be None (constant/no annealing), "inflate" (follows
     # `2/(1 + e^(-c*x)) - 1`), or "deflate" (follows `e^(-c * x)`)
