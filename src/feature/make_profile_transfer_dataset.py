@@ -256,7 +256,7 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
         Returns a Pandas DataFrame
         """
         return pd.read_csv(
-            peaks_bed, sep="\t", header=None,  # Infer compression
+            peaks_bed, sep="\t", header=None, engine='python',  # Infer compression
             names=[
                 "chrom", "peak_start", "peak_end", "name", "score",
                 "strand", "signal", "pval", "qval", "summit_offset"
