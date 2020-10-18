@@ -779,6 +779,7 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
         batch_size = input_seqs.size(0)
         input_length = input_seqs.size(1)
         assert input_length == self.input_length
+        print(cont_profs.size(1), self.num_tasks) ####
         if self.share_controls:
             assert cont_profs.size(1) == 1
             assert cont_profs_trans.size(1) == 1
