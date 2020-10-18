@@ -268,10 +268,7 @@ def create_model(**kwargs):
 @train_ex.capture
 def model_loss(
     model, true_profs, log_pred_profs, log_pred_counts, epoch_num,
-    counts_loss_weight, att_prior_loss_weight,
-    att_prior_loss_weight_anneal_type, att_prior_loss_weight_anneal_speed,
-    att_prior_grad_smooth_sigma, fourier_att_prior_freq_limit,
-    fourier_att_prior_freq_limit_softness, att_prior_loss_only,
+    counts_loss_weight, att_prior_loss_weight, params,
     input_grads=None, status=None
 ):
     """
@@ -301,6 +298,14 @@ def model_loss(
     If the attribution prior loss is not computed at all, then 0 will be in its
     place, instead.
     """
+
+    att_prior_loss_weight_anneal_type = params["att_prior_loss_weight_anneal_type"]
+    att_prior_loss_weight_anneal_speed = params["att_prior_loss_weight_anneal_speed"]
+    att_prior_grad_smooth_sigma = params["att_prior_grad_smooth_sigma"]
+    fourier_att_prior_freq_limit = params["fourier_att_prior_freq_limit"]
+    fourier_att_prior_freq_limit_softness = params["fourier_att_prior_freq_limit_softness"]
+    att_prior_loss_only = params["att_prior_loss_only"]
+
     corr_loss, prof_loss, count_loss = model.correctness_loss(
         true_profs, log_pred_profs, log_pred_counts, counts_loss_weight,
         return_separate_losses=True
@@ -334,9 +339,7 @@ def model_loss(
 
 @train_ex.capture
 def run_epoch(
-    data_loader, mode, model, epoch_num, num_tasks, controls,
-    att_prior_loss_weight, batch_size, revcomp, input_length, input_depth,
-    profile_length, optimizer=None, return_data=False
+    data_loader, mode, model, epoch_num, params, optimizer=None, return_data=False
 ):
     """
     Runs the data from the data loader once through the model, to train,
@@ -365,6 +368,15 @@ def run_epoch(
     batches. If the attribution prior loss is not computed, then it will be all
     0s. If `return_data` is True, then more things will be returned after these.
     """
+    num_tasks = params["num_tasks"]
+    controls = params["controls"]
+    att_prior_loss_weight = params["att_prior_loss_weight"]
+    batch_size = params["batch_size"]
+    revcomp = params["revcomp"]
+    input_length = params["input_length"]
+    input_depth = params["input_depth"]
+    profile_length = params["profile_length"]
+
     assert mode in ("train", "eval")
     if mode == "train":
         assert optimizer is not None
