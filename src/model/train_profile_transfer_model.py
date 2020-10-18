@@ -76,10 +76,10 @@ def config(dataset_transfer):
         "prof_conv_stride": 1,
 
         # Number of prediction tasks
-        "num_tasks": 4,
+        "num_tasks": 1,
 
         # Number of strands; typically 1 (unstranded) or 2 (plus/minus strand)
-        "num_strands": 2,
+        "num_strands": 1,
 
         # Type of control profiles (if any) to use in model; can be "matched" (each
         # task has a matched control), "shared" (all tasks share a control), or
