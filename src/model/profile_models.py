@@ -739,7 +739,7 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
                 torch.nn.Conv1d(
                     in_channels=i,
                     out_channels=j,
-                    kernel_size=self.prof_conv_kernel_size
+                    kernel_size=self.prof_trans_conv_kernel_size
                 ),
                 torch.nn.ReLU(),
             ])
