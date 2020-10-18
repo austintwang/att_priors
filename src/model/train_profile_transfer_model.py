@@ -416,6 +416,7 @@ def run_epoch(
             input_seqs_np = input_seqs
         input_seqs = util.place_tensor(torch.tensor(input_seqs)).float()
         profiles = util.place_tensor(torch.tensor(profiles)).float()
+        profiles_trans = util.place_tensor(torch.tensor(profiles_trans)).float()
 
         if controls is not None:
             tf_profs = profiles[:, :num_tasks, :, :]
