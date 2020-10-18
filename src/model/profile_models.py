@@ -728,8 +728,8 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
         #     kernel_size=1, groups=num_tasks
         # )
 
-        ptp_ins = [self.num_tasks] + [self.prof_trans_conv_channels]
-        ptp_outs = [self.prof_trans_conv_channels] + [self.num_tasks]
+        ptp_ins = [self.num_tasks] + self.prof_trans_conv_channels
+        ptp_outs = self.prof_trans_conv_channels + [self.num_tasks]
 
         self.ptp_layers = {}
 
