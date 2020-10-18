@@ -786,8 +786,8 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
         else:
             assert cont_profs.size(1) == self.num_tasks
             # assert cont_profs_trans.size(1) == self.num_tasks
-        print(cont_profs.shape) ####
-        print(profs_trans.shape) ####
+        print(cont_profs) ####
+        print(profs_trans) ####
         profile_length = cont_profs.size(2)
         profile_length_trans = profs_trans.size(2)
         assert profile_length == self.profile_length
