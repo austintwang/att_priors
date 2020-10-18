@@ -779,15 +779,15 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
         batch_size = input_seqs.size(0)
         input_length = input_seqs.size(1)
         assert input_length == self.input_length
-        print(cont_profs.size(1), cont_profs.shape, self.num_tasks) ####
+        # print(cont_profs.size(1), cont_profs.shape, self.num_tasks) ####
         if self.share_controls:
             assert cont_profs.size(1) == 1
-            assert cont_profs_trans.size(1) == 1
+            # assert cont_profs_trans.size(1) == 1
         else:
             assert cont_profs.size(1) == self.num_tasks
-            assert cont_profs_trans.size(1) == self.num_tasks
+            # assert cont_profs_trans.size(1) == self.num_tasks
         profile_length = cont_profs.size(2)
-        profile_length_trans = cont_profs_trans.size(2)
+        # profile_length_trans = cont_profs_trans.size(2)
         assert profile_length == self.profile_length
         assert profile_length_trans == self.profile_length
         num_strands = cont_profs.size(3)
@@ -802,7 +802,7 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
 
         # Prepare the control tracks: profiles and counts
         cont_counts = torch.sum(cont_profs, dim=3)  # Shape: B x T x 2
-        cont_counts_trans = torch.sum(cont_profs_trans, dim=3)  # Shape: B x T x 2
+        # cont_counts_trans = torch.sum(cont_profs_trans, dim=3)  # Shape: B x T x 2
         if self.share_controls:
             # Replicate the the profiles/counts from B x 1 x 2 x O/B x 1 x 2 to
             # B x T x 2 x O/B x T x 2
