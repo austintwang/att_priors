@@ -573,6 +573,8 @@ def train_model(
     device = torch.device(f"cuda:{params['gpu_id']}") if torch.cuda.is_available() \
         else torch.device("cpu")
 
+    torch.backends.cudnn.enabled = False ####
+
     model = create_model(**params)
     model = model.to(device)
 
