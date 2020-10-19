@@ -850,6 +850,7 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
         prof_large_conv_out = prof_large_conv_out.view(
             batch_size, self.num_tasks, num_strands, -1
         )
+        print(prof_large_conv_out.shape, cont_profs.shape, profs_trans_pred.shape) ####
         prof_with_cont = torch.cat([prof_large_conv_out, cont_profs, profs_trans_pred], dim=2)
         # Shape: B x T x 3S x O
         prof_with_cont = prof_with_cont.view(
