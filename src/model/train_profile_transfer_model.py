@@ -267,8 +267,7 @@ def create_model(**kwargs):
 
 @train_ex.capture
 def model_loss(
-    model, true_profs, log_pred_profs, log_pred_counts, epoch_num,
-    counts_loss_weight, att_prior_loss_weight, params,
+    model, true_profs, log_pred_profs, log_pred_counts, epoch_num, params,
     input_grads=None, status=None
 ):
     """
@@ -305,6 +304,8 @@ def model_loss(
     fourier_att_prior_freq_limit = params["fourier_att_prior_freq_limit"]
     fourier_att_prior_freq_limit_softness = params["fourier_att_prior_freq_limit_softness"]
     att_prior_loss_only = params["att_prior_loss_only"]
+    counts_loss_weight = params["counts_loss_weight"]
+    att_prior_loss_weight = params["att_prior_loss_weight"]
 
     corr_loss, prof_loss, count_loss = model.correctness_loss(
         true_profs, log_pred_profs, log_pred_counts, counts_loss_weight,
