@@ -192,7 +192,7 @@ class ProfilePredictor(torch.nn.Module):
             pos_loss = 1 - pos_score
             return torch.mean(pos_loss)
         else:
-            return place_tensor(torch.zeros(1))
+            return place_tensor(torch.zeros(1), index=gpu_id)
 
 
 class ProfilePredictorWithControls(ProfilePredictor):
