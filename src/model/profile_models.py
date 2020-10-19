@@ -2,7 +2,7 @@ import torch
 import math
 import numpy as np
 from model.util import sanitize_sacred_arguments, convolution_size, \
-    place_tensor, smooth_tensor_1d
+    place_tensor, smooth_tensor_1d, calc_padding_to_same
 import scipy.special
 
 def multinomial_log_probs(category_log_probs, trials, query_counts):
@@ -730,6 +730,7 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
 
         ptp_ins = [self.num_tasks] + self.prof_trans_conv_channels
         ptp_outs = self.prof_trans_conv_channels + [self.num_tasks]
+        ptp_padding = calc_padding_to_same(self.prof_trans_conv_kernel_size, 1)
 
         self.ptp_layers = {}
 
@@ -739,7 +740,8 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
                 torch.nn.Conv1d(
                     in_channels=i,
                     out_channels=j,
-                    kernel_size=self.prof_trans_conv_kernel_size
+                    kernel_size=self.prof_trans_conv_kernel_size,
+                    padding=ptp_padding
                 ),
                 torch.nn.ReLU(),
             ])

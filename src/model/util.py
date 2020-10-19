@@ -161,3 +161,13 @@ def smooth_tensor_1d(input_tensor, smooth_sigma):
     )
 
     return torch.squeeze(smoothed, dim=1)
+
+def calc_padding_to_same(kernel_size, dilation, stride=1, in_length=1):
+    i = in_length
+    k = kernel_size
+    d = dilation
+    s = stride
+
+    total_pad = (d * (k - 1) + (s - 1) * (i - 1))
+
+    return (total_pad // 2, -(-total_pad // 2))
