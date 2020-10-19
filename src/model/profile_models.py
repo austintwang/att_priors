@@ -816,7 +816,7 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
         counts_trans = torch.sum(profs_trans, dim=3)  # Shape: B x T x S
 
         # profs_trans_cat = torch.cat((profs_trans, cont_profs_trans), 1)
-        prof_trans_flat = profs_trans.view(batch_size, self.num_tasks * self.num_strands, -1)
+        profs_trans_flat = profs_trans.view(batch_size, self.num_tasks * self.num_strands, -1)
         profs_trans_pred_flat = self.ptp_conv(profs_trans_flat)
         profs_trans_pred = profs_trans_pred_flat.view(batch_size, self.num_tasks, self.num_strands, -1)
 
