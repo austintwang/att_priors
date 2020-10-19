@@ -414,9 +414,9 @@ def run_epoch(
     for input_seqs, profiles, profiles_trans, statuses, coords, peaks in t_iter:
         if return_data:
             input_seqs_np = input_seqs
-        input_seqs = util.place_tensor(torch.tensor(input_seqs)).float()
-        profiles = util.place_tensor(torch.tensor(profiles)).float()
-        profiles_trans = util.place_tensor(torch.tensor(profiles_trans)).float()
+        input_seqs = util.place_tensor(torch.tensor(input_seqs), index=params.get("gpu_id")).float()
+        profiles = util.place_tensor(torch.tensor(profiles), index=params.get("gpu_id")).float()
+        profiles_trans = util.place_tensor(torch.tensor(profiles_trans), index=params.get("gpu_id")).float()
 
         if controls is not None:
             tf_profs = profiles[:, :num_tasks, :, :]

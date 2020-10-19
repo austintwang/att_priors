@@ -5,13 +5,16 @@ import sacred
 import scipy.ndimage
 import numpy as np
 
-def place_tensor(tensor):
+def place_tensor(tensor, index=None):
     """
     Places a tensor on GPU, if PyTorch sees CUDA; otherwise, the returned tensor
     remains on CPU.
     """
     if torch.cuda.is_available():
-        return tensor.cuda()
+        if index is None:
+            return tensor.cuda()
+        else:
+            return tensor.to(torch.device(f'cuda:{index}'))
     return tensor
 
 
