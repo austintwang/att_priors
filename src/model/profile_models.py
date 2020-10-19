@@ -174,7 +174,7 @@ class ProfilePredictor(torch.nn.Module):
             pos_mags = pos_mags[:, 1:]
 
             # Construct weight vector
-            weights = place_tensor(torch.ones_like(pos_mags))
+            weights = place_tensor(torch.ones_like(pos_mags), index=gpu_id)
             if limit_softness is None:
                 weights[:, freq_limit:] = 0
             else:
