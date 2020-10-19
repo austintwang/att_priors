@@ -730,7 +730,7 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
 
         ptp_ins = [self.num_tasks] + self.prof_trans_conv_channels
         ptp_outs = self.prof_trans_conv_channels + [self.num_tasks]
-        ptp_padding = calc_padding_to_same(self.prof_trans_conv_kernel_size, 1)
+        ptp_padding = calc_padding_to_same(self.prof_trans_conv_kernel_size, 1)[0]
 
         self.ptp_layers = {}
 
