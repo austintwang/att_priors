@@ -722,6 +722,12 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
             out_channels=(self.num_tasks * self.num_strands),
             kernel_size=1, groups=self.num_tasks
         )
+
+        self.prof_one_conv_3 = torch.nn.Conv1d(
+            in_channels=(self.num_tasks * 3 * self.num_strands),
+            out_channels=(self.num_tasks * self.num_strands),
+            kernel_size=1, groups=self.num_tasks  # One set of filters over each task
+        )
         # self.count_one_conv_4 = torch.nn.Conv1d(
         #     in_channels=(num_tasks * 4 * num_strands),
         #     out_channels=(num_tasks * num_strands),
@@ -852,7 +858,7 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
         prof_large_conv_out = prof_large_conv_out.view(
             batch_size, self.num_tasks, num_strands, -1
         )
-        print(prof_large_conv_out.shape, cont_profs.shape, profs_trans_pred.shape) ####
+        # print(prof_large_conv_out.shape, cont_profs.shape, profs_trans_pred.shape) ####
         prof_with_cont = torch.cat([prof_large_conv_out, cont_profs, profs_trans_pred], dim=2)
         # Shape: B x T x 3S x O
         prof_with_cont = prof_with_cont.view(
