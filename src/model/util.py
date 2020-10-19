@@ -129,7 +129,7 @@ def convolution_size(
     return size
 
 
-def smooth_tensor_1d(input_tensor, smooth_sigma):
+def smooth_tensor_1d(input_tensor, smooth_sigma, gpu_id=None):
     """
     Smooths an input tensor along a dimension using a Gaussian filter.
     Arguments:
@@ -149,7 +149,7 @@ def smooth_tensor_1d(input_tensor, smooth_sigma):
     base = np.zeros(1 + (2 * sigma))
     base[sigma] = 1  # Center of window is 1 everywhere else is 0
     kernel = scipy.ndimage.gaussian_filter(base, sigma=sigma, truncate=truncate)
-    kernel = place_tensor(torch.tensor(kernel))
+    kernel = place_tensor(torch.tensor(kernel), index=gpu_id)
 
     # Expand the input and kernel to 3D, with channels of 1
     # Also make the kernel float-type, as the input is going to be of type float

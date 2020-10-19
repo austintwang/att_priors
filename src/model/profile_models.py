@@ -128,7 +128,7 @@ class ProfilePredictor(torch.nn.Module):
 
     def fourier_att_prior_loss(
         self, status, input_grads, freq_limit, limit_softness,
-        att_prior_grad_smooth_sigma
+        att_prior_grad_smooth_sigma, gpu_id=None
     ):
         """
         Computes an attribution prior loss for some given training examples,
@@ -156,7 +156,7 @@ class ProfilePredictor(torch.nn.Module):
 
         # Smooth the gradients
         grads_smooth = smooth_tensor_1d(
-            abs_grads, att_prior_grad_smooth_sigma
+            abs_grads, att_prior_grad_smooth_sigma, gpu_id=gpu_id
         )
 
         # Only do the positives

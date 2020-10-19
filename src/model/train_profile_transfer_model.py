@@ -318,7 +318,7 @@ def model_loss(
    
     att_prior_loss = model.fourier_att_prior_loss(
         status, input_grads, fourier_att_prior_freq_limit,
-        fourier_att_prior_freq_limit_softness, att_prior_grad_smooth_sigma
+        fourier_att_prior_freq_limit_softness, att_prior_grad_smooth_sigma, gpu_id=params.get("gpu_id")
     )
     
     if att_prior_loss_weight_anneal_type is None:
