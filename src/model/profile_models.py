@@ -816,7 +816,9 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
         counts_trans = torch.sum(profs_trans, dim=3)  # Shape: B x T x S
 
         # profs_trans_cat = torch.cat((profs_trans, cont_profs_trans), 1)
-        profs_trans_pred = self.ptp_conv(profs_trans)
+        prof_trans_flat = profs_trans.view(-1, self.num_tasks * self.num_strands, -1)
+        profs_trans_pred_flat = self.ptp_conv(profs_trans_flat)
+        profs_trans_pred = profs_trans_pred_flat.view(-1, self.num_tasks, self.num_strands, -1)
 
         # 1. Perform dilated convolutions on the input, each layer's input is
         # the sum of all previous layers' outputs
