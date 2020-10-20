@@ -472,7 +472,7 @@ def run_epoch(
                 # create the graph
                 # Gradients are summed across strands and tasks
             )
-            print(torch.autograd.grad(input_grads, input_seqs)) ####
+            print(torch.autograd.grad(torch.sum(input_grads), input_seqs)) ####
             # print(input_grads.shape, input_seqs.shape) ####
             # input_grads = input_grads.contiguous()
             if return_data:
