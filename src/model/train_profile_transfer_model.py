@@ -424,10 +424,10 @@ def run_epoch(
         profiles_trans = util.place_tensor(torch.tensor(profiles_trans), index=gpu_id).float()
 
         if controls is not None:
-            tf_profs = profiles[:, :num_tasks, :, :]
-            cont_profs = profiles[:, num_tasks:, :, :]  # Last half or just one
-            tf_profs_trans = profiles_trans[:, :num_tasks, :, :]
-            cont_profs_trans = profiles_trans[:, num_tasks:, :, :]  # Last half or just one
+            tf_profs = profiles[:, :num_tasks, :, :].contiguous()
+            cont_profs = profiles[:, num_tasks:, :, :].contiguous()  # Last half or just one
+            tf_profs_trans = profiles_trans[:, :num_tasks, :, :].contiguous()
+            cont_profs_trans = profiles_trans[:, num_tasks:, :, :].contiguous()  # Last half or just one
         else:
             tf_profs, cont_profs = profiles, None
             tf_profs_trans, cont_profs_trans = profiles, None
