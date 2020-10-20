@@ -476,8 +476,9 @@ def run_epoch(
             # input_grads = input_grads.contiguous()
             if return_data:
                 input_grads_np = input_grads.detach().cpu().numpy()
+            input_grads = input_grads.detach()
             input_grads = input_grads * input_seqs  # Gradient * input
-            input_grads = input_seqs ####
+            # input_grads = input_seqs ####
             status = util.place_tensor(torch.tensor(statuses), index=gpu_id)
             status[status != 0] = 1  # Set to 1 if not negative example
             input_seqs.requires_grad = False  # Reset gradient required
