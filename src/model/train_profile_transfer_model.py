@@ -345,7 +345,7 @@ def model_loss(
 
 @train_ex.capture
 def run_epoch(
-    data_loader, mode, model, epoch_num, params, optimizer=None, return_data=False
+    data_loader, mode, model, epoch_num, params, optimizer=None, return_data=False, ignore_aux=True
 ):
     """
     Runs the data from the data loader once through the model, to train,
@@ -417,6 +417,11 @@ def run_epoch(
         all_input_grads = np.empty((num_samples_exp, input_length, input_depth))
         all_coords = np.empty((num_samples_exp, 3), dtype=object)
         num_samples_seen = 0  # Real number of samples seen
+
+    if ignore_aux:
+        model.freeze_ptp_layers()
+    else:
+        model.unfreeze_ptp_layers()
 
     for input_seqs, profiles, profiles_trans, statuses, coords, peaks in t_iter:
         if return_data:
@@ -495,9 +500,13 @@ def run_epoch(
         # print(input_grads.shape) ####
 
         if mode == "train":
-            att_loss.backward() ####
+            # att_loss.backward() ####
+            if not ignore_aux:
+                model.freeze_ptp_layers()
             loss.backward()  # Compute gradient
             optimizer.step()  # Update weights through backprop
+            if not ignore_aux:
+                model.unfreeze_ptp_layers()
 
         batch_losses.append(loss.item())
         corr_losses.append(corr_loss.item())
