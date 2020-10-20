@@ -345,7 +345,7 @@ def model_loss(
 
 @train_ex.capture
 def run_epoch(
-    data_loader, mode, model, epoch_num, params, optimizer=None, return_data=False, ignore_aux=True
+    data_loader, mode, model, epoch_num, params, optimizer=None, return_data=False, ignore_aux=True, att_prior_loss_weight=None,
 ):
     """
     Runs the data from the data loader once through the model, to train,
@@ -376,7 +376,8 @@ def run_epoch(
     """
     num_tasks = params["num_tasks"]
     controls = params["controls"]
-    att_prior_loss_weight = params["att_prior_loss_weight"]
+    if att_prior_loss_weight is None:
+        att_prior_loss_weight = params["att_prior_loss_weight"]
     batch_size = params["batch_size"]
     revcomp = params["revcomp"]
     input_length = params["input_length"]
@@ -508,8 +509,8 @@ def run_epoch(
             loss.backward()  # Compute gradient
             optimizer.step()  # Update weights through backprop
             
-        if not ignore_aux:
-                model.unfreeze_ptp_layers()
+        # if not ignore_aux:
+        #    model.unfreeze_ptp_layers()
 
         batch_losses.append(loss.item())
         corr_losses.append(corr_loss.item())
@@ -619,7 +620,7 @@ def train_model(
 
         t_batch_losses, t_corr_losses, t_att_losses, t_prof_losses, \
             t_count_losses = run_epoch(
-                train_loader, "train", model, epoch, optimizer=optimizer, ignore_aux=False
+                train_loader, "train", model, epoch, optimizer=optimizer, ignore_aux=True
         )
         train_epoch_loss = np.nanmean(t_batch_losses)
         print(
