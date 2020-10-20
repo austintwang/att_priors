@@ -467,6 +467,9 @@ def run_epoch(
             ).detach()
             weighted_norm_logits = norm_logit_pred_profs * pred_prof_probs
 
+            if not ignore_aux:
+                model.freeze_ptp_layers()
+
             input_grads, = torch.autograd.grad(
                 weighted_norm_logits, input_seqs,
                 grad_outputs=util.place_tensor(
@@ -501,11 +504,11 @@ def run_epoch(
 
         if mode == "train":
             # att_loss.backward() ####
-            if not ignore_aux:
-                model.freeze_ptp_layers()
+            
             loss.backward()  # Compute gradient
             optimizer.step()  # Update weights through backprop
-            if not ignore_aux:
+            
+        if not ignore_aux:
                 model.unfreeze_ptp_layers()
 
         batch_losses.append(loss.item())
