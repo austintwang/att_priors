@@ -603,6 +603,7 @@ def train_model(
         else torch.device("cpu")
 
     # torch.backends.cudnn.enabled = False ####
+    torch.backends.cudnn.benchmark = True ####
 
     model = create_model(**params)
     model = model.to(device)
