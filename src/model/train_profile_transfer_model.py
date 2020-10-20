@@ -595,6 +595,7 @@ def train_model(
 
     run_num = _run._id
     output_dir = os.path.join(MODEL_DIR, f"{trans_id}_{run_num}")
+    os.makedirs(output_dir, exist_ok=True)
     
     if train_seed:
         torch.manual_seed(train_seed)
@@ -665,7 +666,7 @@ def train_model(
 
         t_batch_losses, t_corr_losses, t_att_losses, t_prof_losses, \
             t_count_losses = run_epoch(
-                train_loader, "train", model, epoch, optimizer=optimizer
+                train_loader, "train", model, epoch, optimizer=optimizer, ignore_aux=True
         )
         train_epoch_loss = np.nanmean(t_batch_losses)
         print(
