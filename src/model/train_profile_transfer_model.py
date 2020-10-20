@@ -470,7 +470,7 @@ def run_epoch(
                 # create the graph
                 # Gradients are summed across strands and tasks
             )
-            # print(input_grads.is_contiguous()) ####
+            print(input_grads.shape, input_seqs.shape) ####
             # input_grads = input_grads.contiguous()
             if return_data:
                 input_grads_np = input_grads.detach().cpu().numpy()
