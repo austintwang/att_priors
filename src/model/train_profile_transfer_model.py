@@ -616,7 +616,7 @@ def train_model(
 
         t_batch_losses, t_corr_losses, t_att_losses, t_prof_losses, \
             t_count_losses = run_epoch(
-                train_loader, "train", model, epoch, optimizer=optimizer
+                train_loader, "train", model, epoch, optimizer=optimizer, ignore_aux=False
         )
         train_epoch_loss = np.nanmean(t_batch_losses)
         print(
@@ -652,7 +652,7 @@ def train_model(
         if np.isnan(train_epoch_loss) and np.isnan(val_epoch_loss):
             break
 
-    model.freeze_ptp_layers()
+    # model.freeze_ptp_layers()
 
     for epoch in range(num_epochs):
         if torch.cuda.is_available:
