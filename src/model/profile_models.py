@@ -153,6 +153,7 @@ class ProfilePredictor(torch.nn.Module):
         the batch.
         """
         abs_grads = torch.sum(torch.abs(input_grads), dim=2)
+        return torch.mean(abs_grads) ####
 
         # Smooth the gradients
         grads_smooth = smooth_tensor_1d(
