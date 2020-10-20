@@ -152,8 +152,9 @@ class ProfilePredictor(torch.nn.Module):
         Returns a single scalar Tensor consisting of the attribution loss for
         the batch.
         """
+        return place_tensor(torch.zeros(1), index=gpu_id) ####
         abs_grads = torch.sum(torch.abs(input_grads), dim=2)
-        return torch.mean(abs_grads) ####
+        # return torch.mean(abs_grads) ####
 
         # Smooth the gradients
         grads_smooth = smooth_tensor_1d(
