@@ -337,6 +337,7 @@ def model_loss(
     else:
         final_loss = corr_loss + (weight * att_prior_loss)
 
+    print(final_loss.is_contiguous())
     return final_loss, (corr_loss, att_prior_loss), (prof_loss, count_loss)
 
 
