@@ -337,7 +337,7 @@ def model_loss(
     else:
         final_loss = corr_loss + (weight * att_prior_loss)
 
-    print(final_loss.is_contiguous())
+    # print(final_loss.is_contiguous()) ####
     return final_loss, (corr_loss, att_prior_loss), (prof_loss, count_loss)
 
 
@@ -467,6 +467,7 @@ def run_epoch(
                 # create the graph
                 # Gradients are summed across strands and tasks
             )
+            print(input_grads.is_contiguous()) ####
             if return_data:
                 input_grads_np = input_grads.detach().cpu().numpy()
             input_grads = input_grads * input_seqs  # Gradient * input
