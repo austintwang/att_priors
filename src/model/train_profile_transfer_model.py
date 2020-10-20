@@ -153,7 +153,7 @@ def config(dataset_transfer):
         "negative_ratio": dataset_transfer["negative_ratio"],
     }
 
-    print(dataset_transfer["batch_size"]) ####
+    # print(dataset_transfer["batch_size"]) ####
 
     # # Number of dilating convolutional layers to apply
     # num_dil_conv_layers = params["num_dil_conv_layers"] = 7
