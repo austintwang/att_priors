@@ -472,11 +472,12 @@ def run_epoch(
                 # create the graph
                 # Gradients are summed across strands and tasks
             )
+            print(torch.autograd.grad(input_grads, input_seqs)) ####
             # print(input_grads.shape, input_seqs.shape) ####
             # input_grads = input_grads.contiguous()
             if return_data:
                 input_grads_np = input_grads.detach().cpu().numpy()
-            input_grads = input_grads.detach()
+            # input_grads = input_grads.detach() ####
             input_grads = input_grads * input_seqs  # Gradient * input
             # input_grads = input_seqs ####
             status = util.place_tensor(torch.tensor(statuses), index=gpu_id)
