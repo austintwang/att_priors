@@ -443,6 +443,9 @@ def run_epoch(
         if att_prior_loss_weight > 0:
             input_seqs.requires_grad = True  # Set gradient required
             logit_pred_profs, log_pred_counts = model(input_seqs, cont_profs, tf_profs_trans)
+            print(input_seqs.is_contiguous()) ####
+            print(cont_profs.is_contiguous()) ####
+            print(tf_profs_trans.is_contiguous()) ####
 
             # Subtract mean along output profile dimension; this wouldn't change
             # softmax probabilities, but normalizes the magnitude of gradients
@@ -467,7 +470,7 @@ def run_epoch(
                 # create the graph
                 # Gradients are summed across strands and tasks
             )
-            print(input_grads.is_contiguous()) ####
+            # print(input_grads.is_contiguous()) ####
             if return_data:
                 input_grads_np = input_grads.detach().cpu().numpy()
             input_grads = input_grads * input_seqs  # Gradient * input
