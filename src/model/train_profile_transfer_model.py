@@ -471,7 +471,7 @@ def run_epoch(
                 # Gradients are summed across strands and tasks
             )
             # print(input_grads.is_contiguous()) ####
-            input_grads = input_grads.contiguous()
+            # input_grads = input_grads.contiguous()
             if return_data:
                 input_grads_np = input_grads.detach().cpu().numpy()
             input_grads = input_grads * input_seqs  # Gradient * input
@@ -486,6 +486,8 @@ def run_epoch(
             model, tf_profs, logit_pred_profs, log_pred_counts, epoch_num,
             status=status, input_grads=input_grads
         )
+        print(input_grads) ####
+        print(input_grads.shape) ####
 
         if mode == "train":
             loss.backward()  # Compute gradient
@@ -634,6 +636,8 @@ def train_model(
         # If losses are both NaN, then stop
         if np.isnan(train_epoch_loss) and np.isnan(val_epoch_loss):
             break
+
+    model.freeze_ptp_layers()
 
     for epoch in range(num_epochs):
         if torch.cuda.is_available:
