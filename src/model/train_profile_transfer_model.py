@@ -47,7 +47,7 @@ def config(dataset_transfer):
         att_prior_loss_weight_anneal_speed = 0.3
 
     params = {
-        "gpu_id": "1",
+        "gpu_id": "4",
 
         "prof_trans_conv_kernel_size": 3,
         "prof_trans_conv_channels": [10],
@@ -486,8 +486,8 @@ def run_epoch(
             model, tf_profs, logit_pred_profs, log_pred_counts, epoch_num,
             status=status, input_grads=input_grads
         )
-        print(input_grads) ####
-        print(input_grads.shape) ####
+        # print(input_grads) ####
+        # print(input_grads.shape) ####
 
         if mode == "train":
             loss.backward()  # Compute gradient
