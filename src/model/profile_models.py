@@ -757,12 +757,12 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
         self.ptp_conv = self.ptp_layers["ptp_conv"] = torch.nn.Sequential(*ptp_conv_layers)
 
     def freeze_ptp_layers(self):
-        for k, v in ptp_layers.items():
+        for k, v in self.ptp_layers.items():
             for name, param in v.named_parameters():
                 param.requires_grad = False
 
     def unfreeze_ptp_layers(self):
-        for k, v in ptp_layers.items():
+        for k, v in self.ptp_layers.items():
             for name, param in v.named_parameters():
                 param.requires_grad = True
 
