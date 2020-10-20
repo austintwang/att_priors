@@ -91,8 +91,8 @@ def config(dataset_transfer):
         "counts_loss_weight": 20,
 
         # Weight to use for attribution prior loss; set to 0 to not use att. priors
-        "att_prior_loss_weight": 50,
-        # "att_prior_loss_weight": 0, ####
+        # "att_prior_loss_weight": 50,
+        "att_prior_loss_weight": 0, ####
 
         # Type of annealing; can be None (constant/no annealing), "inflate" (follows
         # `2/(1 + e^(-c*x)) - 1`), or "deflate" (follows `e^(-c * x)`)
@@ -603,7 +603,7 @@ def train_model(
         else torch.device("cpu")
 
     # torch.backends.cudnn.enabled = False ####
-    torch.backends.cudnn.benchmark = True ####
+    # torch.backends.cudnn.benchmark = True ####
 
     model = create_model(**params)
     model = model.to(device)
@@ -621,7 +621,7 @@ def train_model(
 
         t_batch_losses, t_corr_losses, t_att_losses, t_prof_losses, \
             t_count_losses = run_epoch(
-                train_loader, "train", model, epoch, optimizer=optimizer, ignore_aux=True
+                train_loader, "train", model, epoch, optimizer=optimizer, ignore_aux=False
         )
         train_epoch_loss = np.nanmean(t_batch_losses)
         print(
