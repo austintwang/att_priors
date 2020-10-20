@@ -91,8 +91,8 @@ def config(dataset_transfer):
         "counts_loss_weight": 20,
 
         # Weight to use for attribution prior loss; set to 0 to not use att. priors
-        # "att_prior_loss_weight": 50,
-        "att_prior_loss_weight": 0, ####
+        "att_prior_loss_weight": 50,
+        # "att_prior_loss_weight": 0, ####
 
         # Type of annealing; can be None (constant/no annealing), "inflate" (follows
         # `2/(1 + e^(-c*x)) - 1`), or "deflate" (follows `e^(-c * x)`)
@@ -323,6 +323,7 @@ def model_loss(
         status, input_grads, fourier_att_prior_freq_limit,
         fourier_att_prior_freq_limit_softness, att_prior_grad_smooth_sigma, gpu_id=params.get("gpu_id")
     )
+    att_prior_loss = 1 ####
     
     if att_prior_loss_weight_anneal_type is None:
         weight = att_prior_loss_weight
@@ -471,7 +472,7 @@ def run_epoch(
                 # create the graph
                 # Gradients are summed across strands and tasks
             )
-            print(input_grads.shape, input_seqs.shape) ####
+            # print(input_grads.shape, input_seqs.shape) ####
             # input_grads = input_grads.contiguous()
             if return_data:
                 input_grads_np = input_grads.detach().cpu().numpy()
