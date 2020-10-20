@@ -472,7 +472,7 @@ def run_epoch(
                 # create the graph
                 # Gradients are summed across strands and tasks
             )
-            print(torch.autograd.grad(torch.sum(input_grads), input_seqs, retain_graph=True)) ####
+            # print(torch.autograd.grad(torch.sum(input_grads), input_seqs, retain_graph=True)) ####
             # print(input_grads.shape, input_seqs.shape) ####
             # input_grads = input_grads.contiguous()
             if return_data:
@@ -495,6 +495,7 @@ def run_epoch(
         # print(input_grads.shape) ####
 
         if mode == "train":
+            att_loss.backward() ####
             loss.backward()  # Compute gradient
             optimizer.step()  # Update weights through backprop
 
