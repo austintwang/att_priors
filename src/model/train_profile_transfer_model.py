@@ -630,12 +630,12 @@ def train_model(
                 epoch + 1, train_epoch_loss
             )
         )
-        _run.log_scalar(f"{trans_id}_train_epoch_loss", train_epoch_loss)
-        _run.log_scalar(f"{trans_id}_train_batch_losses", t_batch_losses)
-        _run.log_scalar(f"{trans_id}_train_corr_losses", t_corr_losses)
-        _run.log_scalar(f"{trans_id}_train_att_losses", t_att_losses)
-        _run.log_scalar(f"{trans_id}_train_prof_corr_losses", t_prof_losses)
-        _run.log_scalar(f"{trans_id}_train_count_corr_losses", t_count_losses)
+        _run.log_scalar(f"{trans_id}_aux_train_epoch_loss", train_epoch_loss)
+        _run.log_scalar(f"{trans_id}_aux_train_batch_losses", t_batch_losses)
+        _run.log_scalar(f"{trans_id}_aux_train_corr_losses", t_corr_losses)
+        _run.log_scalar(f"{trans_id}_aux_train_att_losses", t_att_losses)
+        _run.log_scalar(f"{trans_id}_aux_train_prof_corr_losses", t_prof_losses)
+        _run.log_scalar(f"{trans_id}_aux_train_count_corr_losses", t_count_losses)
 
         v_batch_losses, v_corr_losses, v_att_losses, v_prof_losses, \
             v_count_losses = run_epoch(
@@ -647,18 +647,45 @@ def train_model(
                 epoch + 1, val_epoch_loss
             )
         )
-        _run.log_scalar(f"{trans_id}_val_epoch_loss", val_epoch_loss)
-        _run.log_scalar(f"{trans_id}_val_batch_losses", v_batch_losses)
-        _run.log_scalar(f"{trans_id}_val_corr_losses", v_corr_losses)
-        _run.log_scalar(f"{trans_id}_val_att_losses", v_att_losses)
-        _run.log_scalar(f"{trans_id}_val_prof_corr_losses", v_prof_losses)
-        _run.log_scalar(f"{trans_id}_val_count_corr_losses", v_count_losses)
+        _run.log_scalar(f"{trans_id}_aux_val_epoch_loss", val_epoch_loss)
+        _run.log_scalar(f"{trans_id}_aux_val_batch_losses", v_batch_losses)
+        _run.log_scalar(f"{trans_id}_aux_val_corr_losses", v_corr_losses)
+        _run.log_scalar(f"{trans_id}_aux_val_att_losses", v_att_losses)
+        _run.log_scalar(f"{trans_id}_aux_val_prof_corr_losses", v_prof_losses)
+        _run.log_scalar(f"{trans_id}_aux_val_count_corr_losses", v_count_losses)
+
+        # Save the model state dict of the epoch with the best validation loss
+        if val_epoch_loss < best_val_epoch_loss:
+            best_val_epoch_loss = val_epoch_loss
+            best_model_state = model.state_dict()
 
         # If losses are both NaN, then stop
         if np.isnan(train_epoch_loss) and np.isnan(val_epoch_loss):
             break
 
-    # model.freeze_ptp_layers()
+    # Compute evaluation metrics and log them
+    for data_loader, prefix in [
+        (test_summit_loader, "summit"), # (test_peak_loader, "peak"),
+        # (test_genome_loader, "genomewide")
+    ]:
+        print("Computing pretraining test metrics, %s:" % prefix)
+        # Load in the state of the epoch with the best validation loss first
+        model.load_state_dict(best_model_state)
+        batch_losses, corr_losses, att_losses, prof_losses, count_losses, \
+            true_profs, log_pred_profs, true_counts, log_pred_counts, coords, \
+            input_grads, input_seqs = run_epoch(
+                data_loader, "eval", model, 0, return_data=True
+        )
+        _run.log_scalar(f"{trans_id}_aux_test_{prefix}_batch_losses", batch_losses)
+        _run.log_scalar(f"{trans_id}_aux_test_{prefix}_corr_losses", corr_losses)
+        _run.log_scalar(f"{trans_id}_aux_test_{prefix}_att_losses", att_losses)
+        _run.log_scalar(f"{trans_id}_aux_test_{prefix}_prof_corr_losses", prof_losses)
+        _run.log_scalar(f"{trans_id}_aux_test_{prefix}_count_corr_losses", count_losses)
+
+        metrics = profile_performance.compute_performance_metrics(
+            true_profs, log_pred_profs, true_counts, log_pred_counts
+        )
+        profile_performance.log_performance_metrics(metrics, f"{trans_id}_aux_{prefix}",  _run)
 
     for epoch in range(num_epochs):
         if torch.cuda.is_available:
