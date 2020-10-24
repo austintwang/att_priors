@@ -137,7 +137,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
         nogenome_key = f"{nogenome_prefix}_{metric_key}"
         # print([[k for j in i for k in j] for metrics in model_metrics.values() for i in metrics.get(nogenome_key, {}).get("values", [[],])]) ####
         for metrics in model_metrics.values():
-            if nogenome_keys not in metrics:
+            if nogenome_key not in metrics:
                 continue
             print(metrics[nogenome_key]["values"])
 
