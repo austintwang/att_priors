@@ -135,7 +135,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
     for metric_key, metric_name, test_alternative in metric_keys:
         plt_path = os.path.join(out_dir, f"metric_{metric_key}.svg")
         nogenome_key = f"{nogenome_prefix}_{metric_key}"
-        print([ metrics.get(nogenome_key, {}).get("values", [{},])[0].get("value") for metrics in model_metrics.values()]) ####
+        print([ metrics.get(nogenome_key, {}).get("values", [[{},],])[0][0].get("value") for metrics in model_metrics.values()]) ####
         nogenome_vals = np.array([
             np.mean(metrics[nogenome_key]["values"]) for metrics in model_metrics.values()
         ])
