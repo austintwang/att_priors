@@ -150,7 +150,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
         ax.hist(nogenome_vals, bins=bins, color="coral", label="No genome", alpha=0.7)
         ax.hist(genome_vals, bins=bins, color="slateblue", label="With genome", alpha=0.7)
         title = "Histogram of %s without/with genomes" % metric_name
-        title += "\n%s, %d/%d %s models" % (condition_name, len(nogenome_vals), len(genome_vals), model_type)
+        title += "\n%s, %d/%d %s models" % (condition_name, len(nogenome_vals), len(genome_vals), "profile")
         if peak_retention != "all":
             title += "\nTraining on %s peaks" % peak_retention
         ax.set_title(title)
@@ -202,12 +202,12 @@ def plot_violin(num_violin_plots, test_metrics, peak_retention, out_dir):
     num_violin_plots = 1 + len(test_metrics)
     fig, ax = plt.subplots(1, num_violin_plots, figsize=(7 * num_violin_plots, 8))
 
-    create_violin_pair(ax[0], nogenome_vals, genome_vals, "Validation profile NLL loss" if model_type == "profile" else "Validation loss", out_dir)
+    create_violin_pair(ax[0], nogenome_vals, genome_vals, "Validation profile NLL loss", out_dir)
     for i in range(0, len(test_metrics)):
         create_violin_pair(ax[i + 1], test_metrics[i][1], test_metrics[i][2], test_metrics[i][0][0].upper() + test_metrics[i][0][1:])
         
     title = "Model performance without/with genomes"
-    title += "\n%s, %d/%d %s models" % (condition_name, len(nogenome_vals), len(genome_vals), model_type)
+    title += "\n%s, %d/%d %s models" % (condition_name, len(nogenome_vals), len(genome_vals), "profile")
     plt.subplots_adjust(top=0.85)
     if peak_retention != "all":
         title += "\nTraining on %s peaks" % peak_retention
@@ -222,18 +222,12 @@ def plot_loss_hist(nogenome_vals, genome_vals, peak_retention, out_dir):
     bins = np.linspace(np.min(all_vals), np.max(all_vals), bin_num)
     ax.hist(nogenome_vals, bins=bins, color="coral", label="No genome", alpha=0.7)
     ax.hist(genome_vals, bins=bins, color="slateblue", label="With genome", alpha=0.7)
-    if model_type == "binary":
-        title = "Histogram of validation loss without/with genomes"
-    else:
-        title = "Histogram of validation profile NLL loss without/with genomes"
-    title += "\n%s, %d/%d %s models" % (condition_name, len(nogenome_vals), len(genome_vals), model_type)
+    title = "Histogram of validation profile NLL loss without/with genomes"
+    title += "\n%s, %d/%d %s models" % (condition_name, len(nogenome_vals), len(genome_vals), "profile")
     if peak_retention != "all":
         title += "\nTraining on %s peaks" % peak_retention
     ax.set_title(title)
-    if model_type == "binary":
-        ax.set_xlabel("Validation loss")
-    else:
-        ax.set_xlabel("Validation profile NLL loss")
+    ax.set_xlabel("Validation profile NLL loss")
     plt.legend()
     plt.savefig(os.path.join(out_dir, "loss_hist.svg"))
 
