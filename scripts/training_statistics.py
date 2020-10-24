@@ -77,6 +77,7 @@ def get_best_metric_at_best_epoch(models_path, metric_name, reduce_func, compare
             # If the best value in the best epoch of the run is best so far, update
             if best_val is None or compare_func(best_val_in_run, best_val):
                 best_run, best_epoch, best_val = run_num, best_epoch_in_run, best_val_in_run
+            print(best_epoch) ####
         except Exception as e:
             print(e)
             print("Warning: Was not able to compute values for run %s" % run_num)
