@@ -256,39 +256,16 @@ def plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir):
     plot_violin(num_violin_plots, test_metrics, peak_retention, out_dir)
 
 if __name__ == '__main__':
-
-    model_type = "binary"
-
-    if model_type == "binary":
-        models_base_path = "/users/amtseng/att_priors/models/trained_models/binary/"
-    else:
-        models_base_path = "/users/amtseng/att_priors/models/trained_models/profile/"
-
-
-    condition_name = "BPNet"
-    noprior_models_path = os.path.join(models_base_path, "BPNet")
-    prior_models_path = os.path.join(models_base_path, "BPNet_prior")
-    peak_retention = "all"
-
-    plot_stats(noprior_models_path, prior_models_path)
-
-
-
-    plot_stats(nogenome_models_path, genome_models_path, "profile", out_dir)
-
-
+    # models_path = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/profile/misc/"
     models_path = "/users/atwang/transfer/models/trained_models/profile/misc/"
     cell_types = ["K562", "HepG2"]
     for i in cell_types:
         for j in cell_types:
             genome_prefix = f"{i}_from_{i}_summit"
-            nogenome_prefix = f"{i}_from_{i}_aux_summit"
+            # nogenome_prefix = f"{i}_from_{i}_aux_summit"
+            nogenome_prefix = f"{i}_from_{i}_summit" ####
             out_dir = "/users/atwang/results/domain_adapt/dnase_models/"
-
-
-
-
-
+            plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir)
 
 
 
