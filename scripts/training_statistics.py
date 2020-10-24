@@ -248,7 +248,7 @@ def write_loss_stats(nongenome_vals, genome_vals, out_dir):
         print("Standard error with genomes: %f" % scipy.stats.sem(genome_vals), file=out_file)
         print("One-sided Mann-Whitney U-test: U = %f, p = %f" % (u, p), file=out_file)
 
-def plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir):
+def plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir, peak_retention):
     nogenome_best_run, nogenome_best_epoch, nogenome_val_losses = fetch_and_print_performance(models_path, nogenome_prefix, out_dir, "nogenome")
     genome_best_run, genome_best_epoch, genome_val_losses = fetch_and_print_performance(models_path, nogenome_prefix, out_dir, "genome")
     nogenome_vals, genome_vals = np.array(list(nogenome_val_losses.values())), np.array(list(genome_val_losses.values()))
@@ -260,6 +260,7 @@ def plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir):
 if __name__ == '__main__':
     # models_path = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/profile/misc/"
     models_path = "/users/atwang/transfer/models/trained_models/profile/misc/"
+    peak_retention = "all"
     cell_types = ["K562", "HepG2"]
     for i in cell_types:
         for j in cell_types:
@@ -267,7 +268,7 @@ if __name__ == '__main__':
             # nogenome_prefix = f"{i}_from_{i}_aux"
             nogenome_prefix = f"{i}_from_{i}" ####
             out_dir = "/users/atwang/results/domain_adapt/dnase_models/"
-            plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir)
+            plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir, peak_retention)
 
 
 
