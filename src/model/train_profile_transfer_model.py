@@ -12,7 +12,7 @@ import feature.make_profile_transfer_dataset as make_profile_transfer_dataset
 
 MODEL_DIR = os.environ.get(
     "MODEL_DIR",
-    "/users/atwang/transfer/models/trained_models/profile/misc/"
+    "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/profile/misc/"
 )
 
 train_ex = sacred.Experiment("train_transfer", ingredients=[
