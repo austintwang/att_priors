@@ -263,9 +263,9 @@ if __name__ == '__main__':
     cell_types = ["K562", "HepG2"]
     for i in cell_types:
         for j in cell_types:
-            genome_prefix = f"{i}_from_{i}_summit"
-            # nogenome_prefix = f"{i}_from_{i}_aux_summit"
-            nogenome_prefix = f"{i}_from_{i}_summit" ####
+            genome_prefix = f"{i}_from_{i}"
+            # nogenome_prefix = f"{i}_from_{i}_aux"
+            nogenome_prefix = f"{i}_from_{i}" ####
             out_dir = "/users/atwang/results/domain_adapt/dnase_models/"
             plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir)
 
