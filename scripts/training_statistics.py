@@ -232,7 +232,7 @@ def plot_loss_hist(nogenome_vals, genome_vals, peak_retention, out_dir):
     plt.savefig(os.path.join(out_dir, "loss_hist.svg"))
 
 
-def write_loss_stats(nongenome_vals, genome_vals, out_dir):
+def write_loss_stats(nogenome_vals, genome_vals, out_dir):
     u, p = scipy.stats.mannwhitneyu(nogenome_vals, genome_vals, alternative="greater")
     out_path = os.path.join(out_dir, "loss_stats.txt")
     with open(out_path, "w") as out_file:
@@ -247,7 +247,7 @@ def plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir, peak_retent
     genome_best_run, genome_best_epoch, genome_val_losses = fetch_and_print_performance(models_path, nogenome_prefix, out_dir, "genome")
     nogenome_vals, genome_vals = np.array(list(nogenome_val_losses.values())), np.array(list(genome_val_losses.values()))
     plot_loss_hist(nogenome_vals, genome_vals, peak_retention, out_dir)
-    write_loss_stats(nongenome_vals, genome_vals, out_dir)
+    write_loss_stats(nogenome_vals, genome_vals, out_dir)
     test_metrics = plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, nogenome_best_run, genome_best_run, out_dir)
     plot_violin(num_violin_plots, test_metrics, peak_retention, out_dir)
 
