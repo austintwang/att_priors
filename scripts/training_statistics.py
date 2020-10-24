@@ -150,7 +150,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
         ax.hist(nogenome_vals, bins=bins, color="coral", label="No genome", alpha=0.7)
         ax.hist(genome_vals, bins=bins, color="slateblue", label="With genome", alpha=0.7)
         title = "Histogram of %s without/with genomes" % metric_name
-        title += "\n%s, %d/%d %s models" % (condition_name, len(nogenome_vals), len(genome_vals), "profile")
+        title += "\n%s, %d/%d %s models" % ("BPNet", len(nogenome_vals), len(genome_vals), "profile")
         if peak_retention != "all":
             title += "\nTraining on %s peaks" % peak_retention
         ax.set_title(title)
@@ -207,7 +207,7 @@ def plot_violin(num_violin_plots, test_metrics, peak_retention, out_dir):
         create_violin_pair(ax[i + 1], test_metrics[i][1], test_metrics[i][2], test_metrics[i][0][0].upper() + test_metrics[i][0][1:])
         
     title = "Model performance without/with genomes"
-    title += "\n%s, %d/%d %s models" % (condition_name, len(nogenome_vals), len(genome_vals), "profile")
+    title += "\n%s, %d/%d %s models" % ("BPNet", len(nogenome_vals), len(genome_vals), "profile")
     plt.subplots_adjust(top=0.85)
     if peak_retention != "all":
         title += "\nTraining on %s peaks" % peak_retention
@@ -223,7 +223,7 @@ def plot_loss_hist(nogenome_vals, genome_vals, peak_retention, out_dir):
     ax.hist(nogenome_vals, bins=bins, color="coral", label="No genome", alpha=0.7)
     ax.hist(genome_vals, bins=bins, color="slateblue", label="With genome", alpha=0.7)
     title = "Histogram of validation profile NLL loss without/with genomes"
-    title += "\n%s, %d/%d %s models" % (condition_name, len(nogenome_vals), len(genome_vals), "profile")
+    title += "\n%s, %d/%d %s models" % ("BPNet", len(nogenome_vals), len(genome_vals), "profile")
     if peak_retention != "all":
         title += "\nTraining on %s peaks" % peak_retention
     ax.set_title(title)
