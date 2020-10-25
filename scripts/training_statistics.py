@@ -181,6 +181,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
         # print(plt_path) ####
         plt.savefig(plt_path)
 
+        print(nogenome_vals, genome_vals) ####
         u, p = scipy.stats.mannwhitneyu(nogenome_vals, genome_vals, alternative=test_alternative)
 
         txt_path = os.path.join(out_dir, f"metric_{metric_key}.txt")
