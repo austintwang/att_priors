@@ -144,14 +144,22 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
             mean = np.mean([j["value"] for i in vals for j in i])
             nogenome_vals.append(mean)
             # print(np.([j["values"] for i in metrics[nogenome_key] for j in i]))
-
+        nogenome_vals = np.array([nogenome_vals])
         # nogenome_vals = np.array([
         #     np.mean(metrics[nogenome_key]["values"]) for metrics in model_metrics.values()
         # ])
         genome_key = f"{genome_prefix}_{metric_key}"
-        genome_vals = np.array([
-            np.mean(metrics[genome_key]["values"]) for metrics in model_metrics.values()
-        ])
+        genome_vals = []
+        for metrics in model_metrics.values():
+            if genome_key not in metrics:
+                continue
+            vals = metrics[genome_key]["values"]
+            mean = np.mean([j["value"] for i in vals for j in i])
+            genome_vals.append(mean)
+        genome_vals = np.array(genome_vals)
+        # genome_vals = np.array([
+        #     np.mean(metrics[genome_key]["values"]) for metrics in model_metrics.values()
+        # ])
         vals_to_return.append((metric_name, nogenome_vals, genome_vals))
         bin_num = 20
         fig, ax = plt.subplots(figsize=(12, 6))
