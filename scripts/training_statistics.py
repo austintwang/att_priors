@@ -218,6 +218,7 @@ def create_violin_pair(ax, nogenome_data, genome_data, metric_name, out_dir):
     # Define the quartiles
     q1, med, q3 = np.percentile(all_data, [25, 50, 70], axis=1)
     iqr = q3 - q1
+    print(all_data[0], all_data[1])
     plot_parts = ax.violinplot(
         [np.sort(all_data[0]), np.sort(all_data[1])], showmeans=False, showmedians=False, showextrema=False
     )
