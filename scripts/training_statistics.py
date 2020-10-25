@@ -230,7 +230,7 @@ def create_violin_pair(ax, nogenome_data, genome_data, metric_name, out_dir):
     ax.set_xticklabels(["No genome", "With genome"])
     ax.set_title(metric_name)
 
-def plot_violin(test_metrics, peak_retention, out_dir):
+def plot_violin(test_metrics, nogenome_vals, genome_vals, peak_retention, out_dir):
     num_violin_plots = 1 + len(test_metrics)
     fig, ax = plt.subplots(1, num_violin_plots, figsize=(7 * num_violin_plots, 8))
 
@@ -287,7 +287,7 @@ def plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir, peak_retent
     write_loss_stats(nogenome_vals, genome_vals, out_dir)
     # print(out_dir) ####
     test_metrics = plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, out_dir, nogenome_query_run=nogenome_best_run, genome_query_run=genome_best_run)
-    plot_violin(test_metrics, peak_retention, out_dir)
+    plot_violin(test_metrics, nogenome_vals, genome_vals, peak_retention, out_dir)
 
 if __name__ == '__main__':
     models_path = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/profile/misc/"
