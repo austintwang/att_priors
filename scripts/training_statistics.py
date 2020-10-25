@@ -134,6 +134,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
     
     for metric_key, metric_name, test_alternative in metric_keys:
         plt_path = os.path.join(out_dir, f"metric_{metric_key}.svg")
+        print(out_dir) ####
         nogenome_key = f"{nogenome_prefix}_{metric_key}"
         # print([[k for j in i for k in j] for metrics in model_metrics.values() for i in metrics.get(nogenome_key, {}).get("values", [[],])]) ####
         nogenome_vals = []
@@ -175,7 +176,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
         ax.set_title(title)
         ax.set_xlabel(metric_name[0].upper() + metric_name[1:])
         plt.legend()
-        print(plt_path) ####
+        # print(plt_path) ####
         plt.savefig(plt_path)
 
         u, p = scipy.stats.mannwhitneyu(nogenome_vals, genome_vals, alternative=test_alternative)
