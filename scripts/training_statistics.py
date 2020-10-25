@@ -176,6 +176,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
         ax.set_xlabel(metric_name[0].upper() + metric_name[1:])
         plt.legend()
         plt.savefig(plt_path)
+        pritn(plt_path) ####
 
         u, p = scipy.stats.mannwhitneyu(nogenome_vals, genome_vals, alternative=test_alternative)
 
