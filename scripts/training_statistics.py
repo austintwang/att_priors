@@ -157,6 +157,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
                 print(run, mean, run == nogenome_query_run) ####
                 nogenome_mean = mean
             # print(np.([j["values"] for i in metrics[nogenome_key] for j in i]))
+        print(nogenome_mean) ####
         nogenome_vals = np.array(nogenome_vals)
         # nogenome_vals = np.array([
         #     np.mean(metrics[nogenome_key]["values"]) for metrics in model_metrics.values()
