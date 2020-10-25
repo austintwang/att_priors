@@ -147,6 +147,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
         nogenome_vals = []
         nogenome_mean = np.nan
         for run, metrics in model_metrics.items():
+            print(metrics.keys()) ####
             if nogenome_key not in metrics:
                 nogenome_vals.append(np.nan)
                 continue
