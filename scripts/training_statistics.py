@@ -181,7 +181,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
         # print(plt_path) ####
         plt.savefig(plt_path)
 
-        print(nogenome_vals, genome_vals, test_alternative) ####
+        # print(nogenome_vals, genome_vals, test_alternative) ####
         u, p = scipy.stats.mannwhitneyu(nogenome_vals, genome_vals, alternative=test_alternative)
 
         txt_path = os.path.join(out_dir, f"metric_{metric_key}.txt")
@@ -257,6 +257,7 @@ def plot_loss_hist(nogenome_vals, genome_vals, peak_retention, out_dir):
 
 
 def write_loss_stats(nogenome_vals, genome_vals, out_dir):
+    print(nogenome_vals, genome_vals) ####
     u, p = scipy.stats.mannwhitneyu(nogenome_vals, genome_vals, alternative="greater")
     out_path = os.path.join(out_dir, "loss_stats.txt")
     with open(out_path, "w") as out_file:
