@@ -258,6 +258,7 @@ def plot_loss_hist(nogenome_vals, genome_vals, peak_retention, out_dir):
     bin_num = 30
     fig, ax = plt.subplots(figsize=(12, 6))
     all_vals = np.concatenate([nogenome_vals, genome_vals])
+    print(all_vals) ####
     bins = np.linspace(np.min(all_vals), np.max(all_vals), bin_num)
     ax.hist(nogenome_vals, bins=bins, color="coral", label="No genome", alpha=0.7)
     ax.hist(genome_vals, bins=bins, color="slateblue", label="With genome", alpha=0.7)
