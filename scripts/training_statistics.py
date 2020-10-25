@@ -196,8 +196,8 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
             print("Standard error with genomes: %f" % scipy.stats.sem(genome_vals), file=txt_file)
             print("One-sided Mann-Whitney U-test: U = %f, p = %f" % (u, p), file=txt_file)
             if nogenome_query_run is not None and genome_query_run is not None:
-                nogenome_mean = np.mean(noprior_metrics[nogenome_query_run][metric_key]["values"])
-                genome_mean = np.mean(genome_metrics[genome_query_run][metric_key]["values"])
+                nogenome_mean = np.mean(model_metrics[nogenome_query_run][nogenome_key]["values"])
+                genome_mean = np.mean(model_metrics[genome_query_run][genome_key]["values"])
                 print("No genome %s (run %s): %f" % (metric_name, nogenome_query_run, nogenome_mean), file=txt_file)
                 print("With genome %s (run %s): %f" % (metric_name, genome_query_run, genome_mean), file=txt_file)
     
