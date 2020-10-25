@@ -136,15 +136,18 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
         plt_path = os.path.join(out_dir, f"metric_{metric_key}.svg")
         nogenome_key = f"{nogenome_prefix}_{metric_key}"
         # print([[k for j in i for k in j] for metrics in model_metrics.values() for i in metrics.get(nogenome_key, {}).get("values", [[],])]) ####
+        nogenome_vals = []
         for metrics in model_metrics.values():
             if nogenome_key not in metrics:
                 continue
-            print(metrics[nogenome_key]) ####
+            vals = metrics[nogenome_key]["values"]
+            mean = np.mean([j["value"] for i in vals for j in i])
+            nogenome_vals.append(mean)
             # print(np.([j["values"] for i in metrics[nogenome_key] for j in i]))
 
-        nogenome_vals = np.array([
-            np.mean(metrics[nogenome_key]["values"]) for metrics in model_metrics.values()
-        ])
+        # nogenome_vals = np.array([
+        #     np.mean(metrics[nogenome_key]["values"]) for metrics in model_metrics.values()
+        # ])
         genome_key = f"{genome_prefix}_{metric_key}"
         genome_vals = np.array([
             np.mean(metrics[genome_key]["values"]) for metrics in model_metrics.values()
