@@ -122,6 +122,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
     #         ("test_corr_auprc", "estimated test auPRC", "less")
     #     ]
     # else:
+    print(nogenome_query_run, genome_query_run) ####
     metric_keys = [
         ("summit_prof_nll", "test profile NLL", "greater"),
         ("summit_prof_jsd", "test profile JSD", "greater"),
