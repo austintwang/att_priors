@@ -106,7 +106,7 @@ def fetch_and_print_performance(models_path, metric_prefix, out_dir, run_id, max
         )
         print("\tBest run: %s" % best_run, file=out_file)
         print("\tBest epoch in run: %d" % best_epoch if best_epoch is not None else -1, file=out_file)
-        print("\tAssociated value: %f" % best_val, file=out_file)
+        print("\tAssociated value: %f" % best_val if best_val is not None else np.nan, file=out_file)
         
         print("Best epoch in each run:", file=out_file)
         for key in sorted(all_vals.keys(), key=lambda p: int(p[0])):
