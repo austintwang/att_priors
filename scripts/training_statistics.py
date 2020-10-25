@@ -140,12 +140,14 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
         nogenome_key = f"{nogenome_prefix}_{metric_key}"
         # print([[k for j in i for k in j] for metrics in model_metrics.values() for i in metrics.get(nogenome_key, {}).get("values", [[],])]) ####
         nogenome_vals = []
-        for metrics in model_metrics.values():
+        for run, metrics in model_metrics.items():
             if nogenome_key not in metrics:
                 continue
             vals = metrics[nogenome_key]["values"]
             mean = np.mean([j["value"] for i in vals for j in i])
             nogenome_vals.append(mean)
+            if run == nogenome_query_run:
+                nogenome_mean = mean
             # print(np.([j["values"] for i in metrics[nogenome_key] for j in i]))
         nogenome_vals = np.array(nogenome_vals)
         # nogenome_vals = np.array([
@@ -153,12 +155,14 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
         # ])
         genome_key = f"{genome_prefix}_{metric_key}"
         genome_vals = []
-        for metrics in model_metrics.values():
+        for run, metrics in model_metrics.items():
             if genome_key not in metrics:
                 continue
             vals = metrics[genome_key]["values"]
             mean = np.mean([j["value"] for i in vals for j in i])
             genome_vals.append(mean)
+            if run == genome_query_run:
+                genome_mean = mean
         genome_vals = np.array(genome_vals)
         # print(nogenome_vals, genome_vals) ####
         # genome_vals = np.array([
