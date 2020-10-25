@@ -186,7 +186,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
             u, p = scipy.stats.mannwhitneyu(nogenome_vals, genome_vals, alternative=test_alternative)
         except ValueError as e:
             print(e)
-            u, p = None, None
+            u, p = np.nan, np.nan
 
         txt_path = os.path.join(out_dir, f"metric_{metric_key}.txt")
         with open(txt_path, "w") as txt_file:
@@ -266,7 +266,7 @@ def write_loss_stats(nogenome_vals, genome_vals, out_dir):
         u, p = scipy.stats.mannwhitneyu(nogenome_vals, genome_vals, alternative="greater")
     except ValueError as e:
         print(e)
-        u, p = None, None
+        u, p = np.nan, np.nan
     out_path = os.path.join(out_dir, "loss_stats.txt")
     with open(out_path, "w") as out_file:
         print("Mean without genomes: %f" % np.mean(nogenome_vals), file=out_file)
