@@ -122,7 +122,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
     #         ("test_corr_auprc", "estimated test auPRC", "less")
     #     ]
     # else:
-    print(nogenome_query_run, genome_query_run) ####
+    # print(nogenome_query_run, genome_query_run) ####
     metric_keys = [
         ("summit_prof_nll", "test profile NLL", "greater"),
         ("summit_prof_jsd", "test profile JSD", "greater"),
@@ -154,6 +154,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
             mean = np.mean([j["value"] for i in vals for j in i])
             nogenome_vals.append(mean)
             if run == nogenome_query_run:
+                print(run, mean) ####
                 nogenome_mean = mean
             # print(np.([j["values"] for i in metrics[nogenome_key] for j in i]))
         nogenome_vals = np.array(nogenome_vals)
