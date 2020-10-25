@@ -132,9 +132,9 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
     
     vals_to_return = []
     
-    print(out_dir) ####
+    # print(out_dir) ####
     for metric_key, metric_name, test_alternative in metric_keys:
-        print(out_dir) ####
+        # print(out_dir) ####
         plt_path = os.path.join(out_dir, f"metric_{metric_key}.svg")
         # print(out_dir) ####
         nogenome_key = f"{nogenome_prefix}_{metric_key}"
@@ -272,7 +272,7 @@ def plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir, peak_retent
     plot_loss_hist(nogenome_vals, genome_vals, peak_retention, out_dir)
     write_loss_stats(nogenome_vals, genome_vals, out_dir)
     # print(out_dir) ####
-    test_metrics = plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, nogenome_best_run, genome_best_run, out_dir)
+    test_metrics = plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, out_dir, nogenome_query_run=nogenome_best_run, genome_query_run=genome_best_run)
     plot_violin(num_violin_plots, test_metrics, peak_retention, out_dir)
 
 if __name__ == '__main__':
