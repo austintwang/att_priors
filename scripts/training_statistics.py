@@ -134,6 +134,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
     
     print(out_dir) ####
     for metric_key, metric_name, test_alternative in metric_keys:
+        print(out_dir) ####
         plt_path = os.path.join(out_dir, f"metric_{metric_key}.svg")
         # print(out_dir) ####
         nogenome_key = f"{nogenome_prefix}_{metric_key}"
