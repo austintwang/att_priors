@@ -154,7 +154,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
             mean = np.mean([j["value"] for i in vals for j in i])
             nogenome_vals.append(mean)
             if run == nogenome_query_run:
-                print(run, mean) ####
+                print(run, mean, run == nogenome_query_run) ####
                 nogenome_mean = mean
             # print(np.([j["values"] for i in metrics[nogenome_key] for j in i]))
         nogenome_vals = np.array(nogenome_vals)
