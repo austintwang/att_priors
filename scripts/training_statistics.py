@@ -236,7 +236,7 @@ def plot_violin(test_metrics, nogenome_vals, genome_vals, peak_retention, out_di
 
     create_violin_pair(ax[0], nogenome_vals, genome_vals, "Validation profile NLL loss", out_dir)
     for i in range(0, len(test_metrics)):
-        create_violin_pair(ax[i + 1], test_metrics[i][1], test_metrics[i][2], test_metrics[i][0][0].upper() + test_metrics[i][0][1:])
+        create_violin_pair(ax[i + 1], test_metrics[i][1], test_metrics[i][2], test_metrics[i][0][0].upper() + test_metrics[i][0][1:], out_dir)
         
     title = "Model performance without/with genomes"
     title += "\n%s, %d/%d %s models" % ("BPNet", len(nogenome_vals), len(genome_vals), "profile")
