@@ -124,7 +124,10 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
     # else:
     metric_keys = [
         ("summit_prof_nll", "test profile NLL", "greater"),
-        ("summit_prof_jsd", "test profile JSD", "greater")
+        ("summit_prof_jsd", "test profile JSD", "greater"),
+        ("summit_prof_spearman", "test profile Spearman r", "greater"),
+        ("summit_prof_pearson", "test profile Pearson r", "greater"),
+        ("summit_prof_mse", "test profile MSE", "greater")
     ]
     
     # Get the metrics, ignoring empty or nonexistent metrics.json files
