@@ -211,6 +211,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
     return vals_to_return  # List of metric name, nogenome values, and genome values
 
 def create_violin_pair(ax, nogenome_data, genome_data, metric_name, out_dir):
+    print(nogenome_data, genome_data) ####
     all_data = np.stack([nogenome_data, genome_data], axis=0)
     # Define the quartiles
     q1, med, q3 = np.percentile(all_data, [25, 50, 70], axis=1)
