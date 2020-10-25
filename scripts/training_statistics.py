@@ -301,6 +301,7 @@ def plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir, peak_retent
 
 if __name__ == '__main__':
     models_path = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/profile/misc/"
+    out_dir_base = "/users/atwang/results/domain_adapt_results/dnase_models/"
     # models_path = "/users/atwang/transfer/models/trained_models/profile/misc/"
     peak_retention = "all"
     cell_types = ["K562", "HepG2"]
@@ -309,7 +310,8 @@ if __name__ == '__main__':
             genome_prefix = f"{i}_from_{j}"
             nogenome_prefix = f"{i}_from_{j}_aux"
             # nogenome_prefix = f"{i}_from_{i}" ####
-            out_dir = "/users/atwang/results/domain_adapt/dnase_models/"
+            out_dir = os.path.join(out_dir_base, genome_prefix)
+            os.makedirs(out_dir, exist_ok=True)
             plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir, peak_retention)
 
 
