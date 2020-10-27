@@ -578,22 +578,22 @@ def run_training(
 @train_ex.automain
 def main():
     import json
-    paths_json_path = "/users/amtseng/att_priors/data/processed/ENCODE_TFChIP/profile/config/SPI1/SPI1_training_paths.json"
-    with open(paths_json_path, "r") as f:
-        paths_json = json.load(f)
-    peak_beds = paths_json["peak_beds"]
-    profile_hdf5 = paths_json["profile_hdf5"]
+    # paths_json_path = "/users/amtseng/att_priors/data/processed/ENCODE_TFChIP/profile/config/SPI1/SPI1_training_paths.json"
+    # with open(paths_json_path, "r") as f:
+    #     paths_json = json.load(f)
+    # peak_beds = paths_json["peak_beds"]
+    # profile_hdf5 = paths_json["profile_hdf5"]
     
-    splits_json_path = "/users/amtseng/att_priors/data/processed/chrom_splits.json"
-    with open(splits_json_path, "r") as f:
-        splits_json = json.load(f)
-    train_chroms, val_chroms, test_chroms = \
-        splits_json["1"]["train"], splits_json["1"]["val"], \
-        splits_json["1"]["test"]
+    # splits_json_path = "/users/amtseng/att_priors/data/processed/chrom_splits.json"
+    # with open(splits_json_path, "r") as f:
+    #     splits_json = json.load(f)
+    # train_chroms, val_chroms, test_chroms = \
+    #     splits_json["1"]["train"], splits_json["1"]["val"], \
+    #     splits_json["1"]["test"]
 
-    run_training(
-        peak_beds, profile_hdf5, train_chroms, val_chroms, test_chroms
-    )
+    # run_training(
+    #     peak_beds, profile_hdf5, train_chroms, val_chroms, test_chroms
+    # )
 
     splits_json_path = "/users/amtseng/att_priors/data/processed/chrom_splits.json"
     with open(splits_json_path, "r") as f:
