@@ -606,27 +606,27 @@ def train_model(
 
 @train_ex.command
 def run_training(
-    peak_beds, profile_hdf5, profile_trans_hdf5, train_chroms, val_chroms, test_chroms, trans_id
+    peak_beds, profile_hdf5, train_chroms, val_chroms, test_chroms, trans_id
 ):
-    train_loader = make_profile_transfer_dataset.create_data_loader(
-        peak_beds, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcher",
+    train_loader = make_profile_dataset.create_data_loader(
+        peak_beds, profile_hdf5, "SamplingCoordsBatcher",
         return_coords=True, chrom_set=train_chroms
     )
-    val_loader = make_profile_transfer_dataset.create_data_loader(
-        peak_beds, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcher",
+    val_loader = make_profile_dataset.create_data_loader(
+        peak_beds, profile_hdf5, "SamplingCoordsBatcher",
         return_coords=True, chrom_set=val_chroms, peak_retention=None
         # Use the whole validation set
     )
-    test_summit_loader = make_profile_transfer_dataset.create_data_loader(
-        peak_beds, profile_hdf5, profile_trans_hdf5, "SummitCenteringCoordsBatcher",
+    test_summit_loader = make_profile_dataset.create_data_loader(
+        peak_beds, profile_hdf5, "SummitCenteringCoordsBatcher",
         return_coords=True, revcomp=False, chrom_set=test_chroms
     )
-    test_peak_loader = make_profile_transfer_dataset.create_data_loader(
-        peak_beds, profile_hdf5, profile_trans_hdf5, "PeakTilingCoordsBatcher",
+    test_peak_loader = make_profile_dataset.create_data_loader(
+        peak_beds, profile_hdf5, "PeakTilingCoordsBatcher",
         return_coords=True, chrom_set=test_chroms
     )
-    test_genome_loader = make_profile_transfer_dataset.create_data_loader(
-        peak_beds, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcher", return_coords=True,
+    test_genome_loader = make_profile_dataset.create_data_loader(
+        peak_beds, profile_hdf5, "SamplingCoordsBatcher", return_coords=True,
         chrom_set=test_chroms
     )
     train_model(
