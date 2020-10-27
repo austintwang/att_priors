@@ -345,8 +345,8 @@ def run_epoch(
     for input_seqs, profiles, statuses, coords, peaks in t_iter:
         if return_data:
             input_seqs_np = input_seqs
-        input_seqs = util.place_tensor(torch.tensor(input_seqs)).float()
-        profiles = util.place_tensor(torch.tensor(profiles)).float()
+        input_seqs = util.place_tensor(torch.tensor(input_seqs), index=gpu_id).float()
+        profiles = util.place_tensor(torch.tensor(profiles), index=gpu_id).float()
 
         if controls is not None:
             tf_profs = profiles[:, :num_tasks, :, :]
@@ -382,7 +382,7 @@ def run_epoch(
             input_grads, = torch.autograd.grad(
                 weighted_norm_logits, input_seqs,
                 grad_outputs=util.place_tensor(
-                    torch.ones(weighted_norm_logits.size())
+                    torch.ones(weighted_norm_logits.size(), index=gpu_id)
                 ),
                 retain_graph=True, create_graph=True
                 # We'll be operating on the gradient itself, so we need to
@@ -392,7 +392,7 @@ def run_epoch(
             if return_data:
                 input_grads_np = input_grads.detach().cpu().numpy()
             input_grads = input_grads * input_seqs  # Gradient * input
-            status = util.place_tensor(torch.tensor(statuses))
+            status = util.place_tensor(torch.tensor(statuses), index=gpu_id)
             status[status != 0] = 1  # Set to 1 if not negative example
             input_seqs.requires_grad = False  # Reset gradient required
         else:
