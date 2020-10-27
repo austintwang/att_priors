@@ -519,7 +519,7 @@ def train_model(
 
         t_batch_losses, t_corr_losses, t_att_losses, t_prof_losses, \
             t_count_losses = run_epoch(
-                train_loader, "train", model, epoch, optimizer=optimizer, ignore_aux=True
+                train_loader, "train", model, epoch, optimizer=optimizer
         )
         train_epoch_loss = np.nanmean(t_batch_losses)
         print(
