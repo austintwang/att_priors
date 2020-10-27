@@ -11,7 +11,7 @@ import feature.make_profile_dataset as make_profile_dataset
 
 MODEL_DIR = os.environ.get(
     "MODEL_DIR",
-    "/users/amtseng/att_priors/models/trained_models/profile/misc/"
+    "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/baseline/"
 )
 
 train_ex = sacred.Experiment("train", ingredients=[
@@ -51,7 +51,7 @@ def config(dataset):
     num_tasks = 4
 
     # Number of strands; typically 1 (unstranded) or 2 (plus/minus strand)
-    num_strands = 2
+    num_strands = 1
 
     # Type of control profiles (if any) to use in model; can be "matched" (each
     # task has a matched control), "shared" (all tasks share a control), or
@@ -594,3 +594,25 @@ def main():
     run_training(
         peak_beds, profile_hdf5, train_chroms, val_chroms, test_chroms
     )
+
+    splits_json_path = "/users/amtseng/att_priors/data/processed/chrom_splits.json"
+    with open(splits_json_path, "r") as f:
+        splits_json = json.load(f)
+    train_chroms, val_chroms, test_chroms = \
+        splits_json["1"]["train"], splits_json["1"]["val"], \
+        splits_json["1"]["test"]
+
+    bed_dir = "/mnt/lab_data2/amtseng/share/austin/dnase"
+    hdf5_dir = "/mnt/lab_data2/atwang/att_priors/data/processed/ENCODE_DNase/profile/labels"
+
+    cell_types = {
+        "K562": ["ENCSR000EOT"],
+        "HepG2": ["ENCSR149XIL"]
+    }
+
+    for i, i_ex in cell_types.items():
+        bed_paths = [os.path.join(bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in i_ex]
+        hdf5_path = os.path.join(hdf5_dir, f"{i}/{i}_profiles.h5")
+        run_training(
+            bed_paths, hdf5_path, train_chroms, val_chroms, test_chroms, f"{i}_dnase_base"
+        )
