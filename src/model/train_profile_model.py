@@ -127,47 +127,50 @@ def config(dataset):
     negative_ratio = dataset["negative_ratio"]
 
 
+# @train_ex.capture
+# def create_model(
+#     controls, input_length, input_depth, profile_length, num_tasks, num_strands,
+#     num_dil_conv_layers, dil_conv_filter_sizes, dil_conv_stride,
+#     dil_conv_dilations, dil_conv_depths, prof_conv_kernel_size, prof_conv_stride
+# ):
+#     """
+#     Creates a profile model using the configuration above.
+#     """
+#     if controls is None:
+#         predictor_class = profile_models.ProfilePredictorWithoutControls
+#     if controls == "matched":
+#         predictor_class = profile_models.ProfilePredictorWithMatchedControls
+#     elif controls == "shared":
+#         predictor_class = profile_models.ProfilePredictorWithSharedControls
+
+#     prof_model = predictor_class(
+#         input_length=input_length,
+#         input_depth=input_depth,
+#         profile_length=profile_length,
+#         num_tasks=num_tasks,
+#         num_strands=num_strands,
+#         num_dil_conv_layers=num_dil_conv_layers,
+#         dil_conv_filter_sizes=dil_conv_filter_sizes,
+#         dil_conv_stride=dil_conv_stride,
+#         dil_conv_dilations=dil_conv_dilations,
+#         dil_conv_depths=dil_conv_depths,
+#         prof_conv_kernel_size=prof_conv_kernel_size,
+#         prof_conv_stride=prof_conv_stride
+#     )
+
+#     return prof_model
+
 @train_ex.capture
-def create_model(
-    controls, input_length, input_depth, profile_length, num_tasks, num_strands,
-    num_dil_conv_layers, dil_conv_filter_sizes, dil_conv_stride,
-    dil_conv_dilations, dil_conv_depths, prof_conv_kernel_size, prof_conv_stride
-):
+def create_model(**kwargs):
     """
     Creates a profile model using the configuration above.
     """
-    if controls is None:
-        predictor_class = profile_models.ProfilePredictorWithoutControls
-    if controls == "matched":
-        predictor_class = profile_models.ProfilePredictorWithMatchedControls
-    elif controls == "shared":
-        predictor_class = profile_models.ProfilePredictorWithSharedControls
 
-    prof_model = predictor_class(
-        input_length=input_length,
-        input_depth=input_depth,
-        profile_length=profile_length,
-        num_tasks=num_tasks,
-        num_strands=num_strands,
-        num_dil_conv_layers=num_dil_conv_layers,
-        dil_conv_filter_sizes=dil_conv_filter_sizes,
-        dil_conv_stride=dil_conv_stride,
-        dil_conv_dilations=dil_conv_dilations,
-        dil_conv_depths=dil_conv_depths,
-        prof_conv_kernel_size=prof_conv_kernel_size,
-        prof_conv_stride=prof_conv_stride
-    )
-
-    return prof_model
-
+    return profile_models.ProfilePredictorWithControlsKwargs(**kwargs)
 
 @train_ex.capture
 def model_loss(
-    model, true_profs, log_pred_profs, log_pred_counts, epoch_num,
-    counts_loss_weight, att_prior_loss_weight,
-    att_prior_loss_weight_anneal_type, att_prior_loss_weight_anneal_speed,
-    att_prior_grad_smooth_sigma, fourier_att_prior_freq_limit,
-    fourier_att_prior_freq_limit_softness, att_prior_loss_only,
+    model, true_profs, log_pred_profs, log_pred_counts, epoch_num, params,
     input_grads=None, status=None
 ):
     """
@@ -197,6 +200,15 @@ def model_loss(
     If the attribution prior loss is not computed at all, then 0 will be in its
     place, instead.
     """
+    att_prior_loss_weight_anneal_type = params["att_prior_loss_weight_anneal_type"]
+    att_prior_loss_weight_anneal_speed = params["att_prior_loss_weight_anneal_speed"]
+    att_prior_grad_smooth_sigma = params["att_prior_grad_smooth_sigma"]
+    fourier_att_prior_freq_limit = params["fourier_att_prior_freq_limit"]
+    fourier_att_prior_freq_limit_softness = params["fourier_att_prior_freq_limit_softness"]
+    att_prior_loss_only = params["att_prior_loss_only"]
+    counts_loss_weight = params["counts_loss_weight"]
+    att_prior_loss_weight = params["att_prior_loss_weight"]
+
     corr_loss, prof_loss, count_loss = model.correctness_loss(
         true_profs, log_pred_profs, log_pred_counts, counts_loss_weight,
         return_separate_losses=True
@@ -230,9 +242,7 @@ def model_loss(
 
 @train_ex.capture
 def run_epoch(
-    data_loader, mode, model, epoch_num, num_tasks, controls,
-    att_prior_loss_weight, batch_size, revcomp, input_length, input_depth,
-    profile_length, optimizer=None, return_data=False
+    data_loader, mode, model, epoch_num, params, optimizer=None, return_data=False
 ):
     """
     Runs the data from the data loader once through the model, to train,
@@ -261,6 +271,17 @@ def run_epoch(
     batches. If the attribution prior loss is not computed, then it will be all
     0s. If `return_data` is True, then more things will be returned after these.
     """
+    num_tasks = params["num_tasks"]
+    controls = params["controls"]
+    if att_prior_loss_weight is None:
+        att_prior_loss_weight = params["att_prior_loss_weight"]
+    batch_size = params["batch_size"]
+    revcomp = params["revcomp"]
+    input_length = params["input_length"]
+    input_depth = params["input_depth"]
+    profile_length = params["profile_length"]
+    gpu_id = params.get("gpu_id")
+
     assert mode in ("train", "eval")
     if mode == "train":
         assert optimizer is not None
@@ -417,8 +438,7 @@ def run_epoch(
 @train_ex.capture
 def train_model(
     train_loader, val_loader, test_summit_loader, test_peak_loader,
-    test_genome_loader, num_epochs, learning_rate, early_stopping,
-    early_stop_hist_len, early_stop_min_delta, train_seed, _run
+    test_genome_loader, trans_id, params, _run
 ):
     """
     Trains the network for the given training and validation data.
@@ -434,16 +454,29 @@ def train_model(
     Note that all data loaders are expected to yield the 1-hot encoded
     sequences, profiles, statuses, source coordinates, and source peaks.
     """
+    num_epochs = params["num_epochs"]
+    num_epochs_prof = params["num_epochs_prof"]
+    learning_rate = params["learning_rate"]
+    early_stopping = params["early_stopping"]
+    early_stop_hist_len = params["early_stop_hist_len"]
+    early_stop_min_delta = params["early_stop_min_delta"]
+    train_seed = params["train_seed"]
+
+
     run_num = _run._id
-    output_dir = os.path.join(MODEL_DIR, str(run_num))
+    output_dir = os.path.join(MODEL_DIR, f"{trans_id}_{run_num}")
+    os.makedirs(output_dir, exist_ok=True)
     
     if train_seed:
         torch.manual_seed(train_seed)
 
-    device = torch.device("cuda") if torch.cuda.is_available() \
+    device = torch.device(f"cuda:{params['gpu_id']}") if torch.cuda.is_available() \
         else torch.device("cpu")
 
-    model = create_model()
+    # torch.backends.cudnn.enabled = False ####
+    # torch.backends.cudnn.benchmark = True ####
+
+    model = create_model(**params)
     model = model.to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -459,7 +492,7 @@ def train_model(
 
         t_batch_losses, t_corr_losses, t_att_losses, t_prof_losses, \
             t_count_losses = run_epoch(
-                train_loader, "train", model, epoch, optimizer=optimizer
+                train_loader, "train", model, epoch, optimizer=optimizer, ignore_aux=True
         )
         train_epoch_loss = np.nanmean(t_batch_losses)
         print(
@@ -467,12 +500,12 @@ def train_model(
                 epoch + 1, train_epoch_loss
             )
         )
-        _run.log_scalar("train_epoch_loss", train_epoch_loss)
-        _run.log_scalar("train_batch_losses", t_batch_losses)
-        _run.log_scalar("train_corr_losses", t_corr_losses)
-        _run.log_scalar("train_att_losses", t_att_losses)
-        _run.log_scalar("train_prof_corr_losses", t_prof_losses)
-        _run.log_scalar("train_count_corr_losses", t_count_losses)
+        _run.log_scalar(f"{trans_id}_train_epoch_loss", train_epoch_loss)
+        _run.log_scalar(f"{trans_id}_train_batch_losses", t_batch_losses)
+        _run.log_scalar(f"{trans_id}_train_corr_losses", t_corr_losses)
+        _run.log_scalar(f"{trans_id}_train_att_losses", t_att_losses)
+        _run.log_scalar(f"{trans_id}_train_prof_corr_losses", t_prof_losses)
+        _run.log_scalar(f"{trans_id}_train_count_corr_losses", t_count_losses)
 
         v_batch_losses, v_corr_losses, v_att_losses, v_prof_losses, \
             v_count_losses = run_epoch(
@@ -484,12 +517,12 @@ def train_model(
                 epoch + 1, val_epoch_loss
             )
         )
-        _run.log_scalar("val_epoch_loss", val_epoch_loss)
-        _run.log_scalar("val_batch_losses", v_batch_losses)
-        _run.log_scalar("val_corr_losses", v_corr_losses)
-        _run.log_scalar("val_att_losses", v_att_losses)
-        _run.log_scalar("val_prof_corr_losses", v_prof_losses)
-        _run.log_scalar("val_count_corr_losses", v_count_losses)
+        _run.log_scalar(f"{trans_id}_val_epoch_loss", val_epoch_loss)
+        _run.log_scalar(f"{trans_id}_val_batch_losses", v_batch_losses)
+        _run.log_scalar(f"{trans_id}_val_corr_losses", v_corr_losses)
+        _run.log_scalar(f"{trans_id}_val_att_losses", v_att_losses)
+        _run.log_scalar(f"{trans_id}_val_prof_corr_losses", v_prof_losses)
+        _run.log_scalar(f"{trans_id}_val_count_corr_losses", v_count_losses)
 
         # Save trained model for the epoch
         savepath = os.path.join(
@@ -532,48 +565,47 @@ def train_model(
             input_grads, input_seqs = run_epoch(
                 data_loader, "eval", model, 0, return_data=True
         )
-        _run.log_scalar("test_%s_batch_losses" % prefix, batch_losses)
-        _run.log_scalar("test_%s_corr_losses" % prefix, corr_losses)
-        _run.log_scalar("test_%s_att_losses" % prefix, att_losses)
-        _run.log_scalar("test_%s_prof_corr_losses" % prefix, prof_losses)
-        _run.log_scalar("test_%s_count_corr_losses" % prefix, count_losses)
+        _run.log_scalar(f"{trans_id}_test_{prefix}_batch_losses", batch_losses)
+        _run.log_scalar(f"{trans_id}_test_{prefix}_corr_losses", corr_losses)
+        _run.log_scalar(f"{trans_id}_test_{prefix}_att_losses", att_losses)
+        _run.log_scalar(f"{trans_id}_test_{prefix}_prof_corr_losses", prof_losses)
+        _run.log_scalar(f"{trans_id}_test_{prefix}_count_corr_losses", count_losses)
 
         metrics = profile_performance.compute_performance_metrics(
             true_profs, log_pred_profs, true_counts, log_pred_counts
         )
-        profile_performance.log_performance_metrics(metrics, prefix,  _run)
+        profile_performance.log_performance_metrics(metrics, f"{trans_id}_{prefix}",  _run)
 
 
 @train_ex.command
 def run_training(
-    peak_beds, profile_hdf5, train_chroms, val_chroms, test_chroms
+    peak_beds, profile_hdf5, profile_trans_hdf5, train_chroms, val_chroms, test_chroms, trans_id
 ):
-    train_loader = make_profile_dataset.create_data_loader(
-        peak_beds, profile_hdf5, "SamplingCoordsBatcher",
+    train_loader = make_profile_transfer_dataset.create_data_loader(
+        peak_beds, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcher",
         return_coords=True, chrom_set=train_chroms
     )
-    val_loader = make_profile_dataset.create_data_loader(
-        peak_beds, profile_hdf5, "SamplingCoordsBatcher",
+    val_loader = make_profile_transfer_dataset.create_data_loader(
+        peak_beds, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcher",
         return_coords=True, chrom_set=val_chroms, peak_retention=None
         # Use the whole validation set
     )
-    test_summit_loader = make_profile_dataset.create_data_loader(
-        peak_beds, profile_hdf5, "SummitCenteringCoordsBatcher",
+    test_summit_loader = make_profile_transfer_dataset.create_data_loader(
+        peak_beds, profile_hdf5, profile_trans_hdf5, "SummitCenteringCoordsBatcher",
         return_coords=True, revcomp=False, chrom_set=test_chroms
     )
-    test_peak_loader = make_profile_dataset.create_data_loader(
-        peak_beds, profile_hdf5, "PeakTilingCoordsBatcher",
+    test_peak_loader = make_profile_transfer_dataset.create_data_loader(
+        peak_beds, profile_hdf5, profile_trans_hdf5, "PeakTilingCoordsBatcher",
         return_coords=True, chrom_set=test_chroms
     )
-    test_genome_loader = make_profile_dataset.create_data_loader(
-        peak_beds, profile_hdf5, "SamplingCoordsBatcher", return_coords=True,
+    test_genome_loader = make_profile_transfer_dataset.create_data_loader(
+        peak_beds, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcher", return_coords=True,
         chrom_set=test_chroms
     )
     train_model(
         train_loader, val_loader, test_summit_loader, test_peak_loader,
-        test_genome_loader
+        test_genome_loader, trans_id
     )
-
 
 @train_ex.automain
 def main():
