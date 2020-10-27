@@ -300,8 +300,7 @@ def run_epoch(
     """
     num_tasks = params["num_tasks"]
     controls = params["controls"]
-    if att_prior_loss_weight is None:
-        att_prior_loss_weight = params["att_prior_loss_weight"]
+    att_prior_loss_weight = params["att_prior_loss_weight"]
     batch_size = params["batch_size"]
     revcomp = params["revcomp"]
     input_length = params["input_length"]
