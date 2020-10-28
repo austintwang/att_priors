@@ -328,5 +328,19 @@ if __name__ == '__main__':
             os.makedirs(out_dir, exist_ok=True)
             plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir, peak_retention)
 
+    models_path = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/baseline/"
+    out_dir_base = "/users/atwang/results/domain_adapt_results/dnase_models_baseline/"
+    peak_retention = "all"
+    cell_types = ["K562", "HepG2"]
+    for i in cell_types:
+        genome_prefix = f"{i}_dnase_base"
+        nogenome_prefix = f"{i}_dnase_base"
+        # nogenome_prefix = f"{i}_from_{i}" ####
+        out_dir = os.path.join(out_dir_base, genome_prefix)
+        os.makedirs(out_dir, exist_ok=True)
+        plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir, peak_retention)
+    
+    
+
 
 
