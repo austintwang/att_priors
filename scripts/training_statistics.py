@@ -59,12 +59,13 @@ def get_best_metric_at_best_epoch(models_path, metric_name, reduce_func, compare
     # Get the metrics, ignoring empty or nonexistent metrics.json files
     metrics = {run_num : import_metrics_json(models_path, run_num) for run_num in os.listdir(models_path)}
     metrics = {key : val for key, val in metrics.items() if val}  # Remove empties
-    print(models_path, metric_name, metrics.keys()) ####
+    # print(models_path, metric_name, metrics.keys()) ####
 
     # Get the best value
     best_run, best_epoch, best_val, all_vals = None, None, None, {}
     for run_num in metrics.keys():
         # print(metrics[run_num].keys()) ####
+        print(metrics[run_num][metric_name]) ####
         try:
             # Find the best epoch within that run
             best_epoch_in_run, best_val_in_run = None, None
