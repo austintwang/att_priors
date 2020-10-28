@@ -67,8 +67,9 @@ def get_best_metric_at_best_epoch(models_path, metric_name, reduce_func, compare
         # print(metrics[run_num].keys()) ####
         try:
             a = metrics[run_num][metric_name] ####
-        except KeyError:
+        except KeyError as e:
             print(metrics[run_num].keys())
+            print(e)
         try:
             # Find the best epoch within that run
             best_epoch_in_run, best_val_in_run = None, None
