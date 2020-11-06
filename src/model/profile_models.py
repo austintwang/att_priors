@@ -761,7 +761,7 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
     def set_aux_mode(self):
         for k, v in self.ptp_layers.items():
             for name, param in v.named_parameters():
-                print(name) ####
+                print(k, name) ####
                 param.requires_grad = False
         for name, param in self.seq_params:
             param.requires_grad = True
@@ -769,7 +769,7 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
     def set_seq_mode(self):
         for k, v in self.ptp_layers.items():
             for name, param in v.named_parameters():
-                print(name) ####
+                print(k, name) ####
                 param.requires_grad = True
         for name, param in self.seq_params:
             param.requires_grad = False
