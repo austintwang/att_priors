@@ -271,6 +271,7 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
         if self.jitter:
             self.jitter_rng = np.random.RandomState(jitter_seed)
 
+    @staticmethod
     def _query_peak(query_table, peak, sig_thresh):
         if sig_thresh:
             if peak["pval"] < sig_thresh:
