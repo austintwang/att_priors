@@ -290,7 +290,7 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
         end_hash = int(end) // 1000
         candidates = set()
         for pos_hash in range(begin_hash, end_hash + 1):
-            candidates |= query_table[(chrom, pos_hash,)]
+            candidates |= query_table.get((chrom, pos_hash,), set())
 
         for c in candidates:
             start_c, end_c = c
