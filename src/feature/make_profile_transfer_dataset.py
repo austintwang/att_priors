@@ -262,6 +262,7 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
             all_pos_table.append(coords)
 
         self.all_pos_table = np.concatenate(all_pos_table)  # Shape: N x 7
+        print(all_pos_table) ####
         self.num_total_pos = len(self.all_pos_table)
 
         # Number of positives and negatives per batch
