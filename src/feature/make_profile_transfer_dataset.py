@@ -243,7 +243,7 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
                         peaks_query.setdefault((chrom, pos_hash), set()).add((start, end),)
 
         all_pos_table = []
-        for pos_coords_bed in pos_coords_beds:
+        for i, pos_coords_bed in enumerate(pos_coords_beds):
             peaks_table = self._import_peaks(pos_coords_bed)
             rows_filtered = peaks_table.apply(lambda r: self._query_peak(peaks_query, r, sig_thresh), axis=1)
             # print(rows_filtered) ####
