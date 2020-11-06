@@ -243,9 +243,15 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
                         peaks_query.setdefault((chrom, pos_hash), set()).add((start, end),)
 
         all_pos_table = []
+        if peaks_thresh_type == "sig":
+            cmp_fn_pk = operator.ge
+        elif peaks_thresh_type == "insig":
+            cmp_fn_pk = operator.lt
+        else:
+            cmp_fn_pk = None
         for i, pos_coords_bed in enumerate(pos_coords_beds):
             peaks_table = self._import_peaks(pos_coords_bed)
-            rows_filtered = peaks_table.apply(lambda r: self._query_peak(peaks_query, r, sig_thresh), axis=1)
+            rows_filtered = peaks_table.apply(lambda r: self._query_peak(peaks_query, r, sig_thresh, cmp_fn_pk), axis=1)
             # print(rows_filtered) ####
             # print(peaks_table) ####
             table_filtered = peaks_table.loc[rows_filtered]
@@ -275,9 +281,9 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
             self.jitter_rng = np.random.RandomState(jitter_seed)
 
     @staticmethod
-    def _query_peak(query_table, peak, sig_thresh):
-        if sig_thresh:
-            if peak["pval"] < sig_thresh:
+    def _query_peak(query_table, peak, sig_thresh, cmp_fn):
+        if sig_thresh and cmp_fn is not None:
+            if cmp_fn(peak["pval"], sig_thresh):
                 return False
 
         if query_table is None:
