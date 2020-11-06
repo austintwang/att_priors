@@ -47,7 +47,8 @@ def config(dataset_transfer):
         att_prior_loss_weight_anneal_speed = 0.3
 
     params = {
-        "gpu_id": "4",
+        # "gpu_id": "4",
+        "gpu_id": "2", ####
 
         "prof_trans_conv_kernel_size": 3,
         "prof_trans_conv_channels": [10],
