@@ -171,3 +171,13 @@ def calc_padding_to_same(kernel_size, dilation, stride=1, in_length=1):
     total_pad = (d * (k - 1) + (s - 1) * (i - 1))
 
     return (total_pad // 2, -(-total_pad // 2))
+
+class UniversalSet(set):
+    def __and__(self, other):
+        return other
+
+    def __rand__(self, other):
+        return other
+
+    def __contains__(self, item):
+        return True

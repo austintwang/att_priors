@@ -345,7 +345,7 @@ def model_loss(
 
 @train_ex.capture
 def run_epoch(
-    data_loader, mode, model, epoch_num, params, optimizer=None, return_data=False, ignore_aux=True, att_prior_loss_weight=None,
+    data_loader, mode, model, epoch_num, params, optimizer=None, return_data=False, seq_mode=True, att_prior_loss_weight=None,
 ):
     """
     Runs the data from the data loader once through the model, to train,
@@ -419,10 +419,10 @@ def run_epoch(
         all_coords = np.empty((num_samples_exp, 3), dtype=object)
         num_samples_seen = 0  # Real number of samples seen
 
-    if ignore_aux:
-        model.freeze_ptp_layers()
+    if seq_mode:
+        model.set_seq_mode()
     else:
-        model.unfreeze_ptp_layers()
+        model.set_aux_mode()
 
     for input_seqs, profiles, profiles_trans, statuses, coords, peaks in t_iter:
         if return_data:
@@ -468,8 +468,8 @@ def run_epoch(
             ).detach()
             weighted_norm_logits = norm_logit_pred_profs * pred_prof_probs
 
-            if not ignore_aux:
-                model.freeze_ptp_layers()
+            if seq_mode:
+                model.set_seq_mode()
 
             input_grads, = torch.autograd.grad(
                 weighted_norm_logits, input_seqs,
@@ -567,8 +567,7 @@ def run_epoch(
 
 @train_ex.capture
 def train_model(
-    train_loader, val_loader, test_summit_loader, test_peak_loader,
-    test_genome_loader, trans_id, params, _run
+    loaders, trans_id, params, _run
 ):
     """
     Trains the network for the given training and validation data.
@@ -592,6 +591,18 @@ def train_model(
     early_stop_min_delta = params["early_stop_min_delta"]
     train_seed = params["train_seed"]
 
+    train_loader = loaders["train"]
+    val_loader = loaders["val"]
+    test_genome_loader = loaders["test_genome"]
+    test_loaders = [
+        (loaders["test_summit"], "summit"),
+        (loaders["test_summit_to_sig"], "summit_to_sig"),
+        (loaders["test_summit_from_sig"], "summit_from_sig"),
+        (loaders["test_summit_to_sig_from_sig"], "summit_to_sig_from_sig"),
+        (loaders["test_summit_to_insig_from_insig"], "test_summit_to_insig_from_insig"),
+        (loaders["test_summit_to_insig_from_sig"], "test_summit_to_insig_from_sig"),
+        (loaders["test_summit_to_sig_from_insig"], "test_summit_to_sig_from_insig"),
+    ]
 
     run_num = _run._id
     output_dir = os.path.join(MODEL_DIR, f"{trans_id}_{run_num}")
@@ -622,11 +633,11 @@ def train_model(
 
         t_batch_losses, t_corr_losses, t_att_losses, t_prof_losses, \
             t_count_losses = run_epoch(
-                train_loader, "train", model, epoch, optimizer=optimizer, ignore_aux=False
+                train_loader, "train", model, epoch, optimizer=optimizer, seq_mode=False
         )
         train_epoch_loss = np.nanmean(t_batch_losses)
         print(
-            "Train epoch %d: average loss = %6.10f" % (
+            "Pre-Train epoch %d: average loss = %6.10f" % (
                 epoch + 1, train_epoch_loss
             )
         )
@@ -643,7 +654,7 @@ def train_model(
         )
         val_epoch_loss = np.nanmean(v_batch_losses)
         print(
-            "Valid epoch %d: average loss = %6.10f" % (
+            "Pre-Valid epoch %d: average loss = %6.10f" % (
                 epoch + 1, val_epoch_loss
             )
         )
@@ -663,11 +674,25 @@ def train_model(
         if np.isnan(train_epoch_loss) and np.isnan(val_epoch_loss):
             break
 
+        # Check for early stopping
+        if early_stopping:
+            if len(val_epoch_loss_hist) < early_stop_hist_len + 1:
+                # Not enough history yet; tack on the loss
+                val_epoch_loss_hist = [val_epoch_loss] + val_epoch_loss_hist
+            else:
+                # Tack on the new validation loss, kicking off the old one
+                val_epoch_loss_hist = \
+                    [val_epoch_loss] + val_epoch_loss_hist[:-1]
+                best_delta = np.max(np.diff(val_epoch_loss_hist))
+                if best_delta < early_stop_min_delta:
+                    break  # Not improving enough
+
     # Compute evaluation metrics and log them
-    for data_loader, prefix in [
-        (test_summit_loader, "summit"), # (test_peak_loader, "peak"),
-        # (test_genome_loader, "genomewide")
-    ]:
+    # for data_loader, prefix in [
+    #     (test_summit_loader, "summit"), # (test_peak_loader, "peak"),
+    #     # (test_genome_loader, "genomewide")
+    # ]:
+    for data_loader, prefix in test_loaders:
         print("Computing pretraining test metrics, %s:" % prefix)
         # Load in the state of the epoch with the best validation loss first
         model.load_state_dict(best_model_state)
@@ -754,10 +779,11 @@ def train_model(
                     break  # Not improving enough
 
     # Compute evaluation metrics and log them
-    for data_loader, prefix in [
-        (test_summit_loader, "summit"), # (test_peak_loader, "peak"),
-        # (test_genome_loader, "genomewide")
-    ]:
+    # for data_loader, prefix in [
+    #     (test_summit_loader, "summit"), # (test_peak_loader, "peak"),
+    #     # (test_genome_loader, "genomewide")
+    # ]:
+    for data_loader, prefix in test_loaders:
         print("Computing test metrics, %s:" % prefix)
         # Load in the state of the epoch with the best validation loss first
         model.load_state_dict(best_model_state)
@@ -780,32 +806,62 @@ def train_model(
 
 @train_ex.command
 def run_training(
-    peak_beds, profile_hdf5, profile_trans_hdf5, train_chroms, val_chroms, test_chroms, trans_id
+    peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, train_chroms, val_chroms, test_chroms, trans_id
 ):
-    train_loader = make_profile_transfer_dataset.create_data_loader(
-        peak_beds, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcher",
-        return_coords=True, chrom_set=train_chroms
-    )
-    val_loader = make_profile_transfer_dataset.create_data_loader(
-        peak_beds, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcher",
-        return_coords=True, chrom_set=val_chroms, peak_retention=None
-        # Use the whole validation set
-    )
-    test_summit_loader = make_profile_transfer_dataset.create_data_loader(
-        peak_beds, profile_hdf5, profile_trans_hdf5, "SummitCenteringCoordsBatcher",
-        return_coords=True, revcomp=False, chrom_set=test_chroms
-    )
-    test_peak_loader = make_profile_transfer_dataset.create_data_loader(
-        peak_beds, profile_hdf5, profile_trans_hdf5, "PeakTilingCoordsBatcher",
-        return_coords=True, chrom_set=test_chroms
-    )
-    test_genome_loader = make_profile_transfer_dataset.create_data_loader(
-        peak_beds, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcher", return_coords=True,
-        chrom_set=test_chroms
-    )
+    loaders = {
+        "train": make_profile_transfer_dataset.create_data_loader(
+            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcher",
+            return_coords=True, chrom_set=train_chroms
+        ),
+        "val": make_profile_transfer_dataset.create_data_loader(
+            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcher",
+            return_coords=True, chrom_set=val_chroms, peak_retention=None
+            # Use the whole validation set
+        ),
+        "test_summit": make_profile_transfer_dataset.create_data_loader(
+            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SummitCenteringCoordsBatcher",
+            return_coords=True, revcomp=False, chrom_set=test_chroms
+        ),
+        "test_summit_to_sig": make_profile_transfer_dataset.create_data_loader(
+            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SummitCenteringCoordsBatcherToSig",
+            return_coords=True, revcomp=False, chrom_set=test_chroms
+        ),
+        "test_summit_from_sig": make_profile_transfer_dataset.create_data_loader(
+            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SummitCenteringCoordsBatcherFromSig",
+            return_coords=True, revcomp=False, chrom_set=test_chroms
+        ),
+        "test_summit_to_sig_from_sig": make_profile_transfer_dataset.create_data_loader(
+            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SummitCenteringCoordsBatcherToSigFromSig",
+            return_coords=True, revcomp=False, chrom_set=test_chroms
+        ),
+        "test_summit_to_insig_from_sig": make_profile_transfer_dataset.create_data_loader(
+            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SummitCenteringCoordsBatcherToInsigFromSig",
+            return_coords=True, revcomp=False, chrom_set=test_chroms
+        ),
+        "test_summit_to_sig_from_insig": make_profile_transfer_dataset.create_data_loader(
+            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SummitCenteringCoordsBatcherToSigFromInsig",
+            return_coords=True, revcomp=False, chrom_set=test_chroms
+        ),
+        "test_summit_to_sig_from_sig": make_profile_transfer_dataset.create_data_loader(
+            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SummitCenteringCoordsBatcherToSigFromSig",
+            return_coords=True, revcomp=False, chrom_set=test_chroms
+        ),
+        "test_summit_to_insig_from_insig": make_profile_transfer_dataset.create_data_loader(
+            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SummitCenteringCoordsBatcherToInsigFromInsig",
+            return_coords=True, revcomp=False, chrom_set=test_chroms
+        ),
+        "test_peak": make_profile_transfer_dataset.create_data_loader(
+            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "PeakTilingCoordsBatcher",
+            return_coords=True, chrom_set=test_chroms
+        ),
+        "test_genome": make_profile_transfer_dataset.create_data_loader(
+            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcher", return_coords=True,
+            chrom_set=test_chroms
+        )
+    }
+    
     train_model(
-        train_loader, val_loader, test_summit_loader, test_peak_loader,
-        test_genome_loader, trans_id
+        loaders, trans_id
     )
 
 
@@ -830,9 +886,12 @@ def main():
 
     for i, i_ex in cell_types.items():
         for j, j_ex in cell_types.items():
-            bed_paths = [os.path.join(bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in i_ex]
+            if i == j:
+                continue
+            bed_paths_to = [os.path.join(bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in i_ex]
+            bed_paths_from = [os.path.join(bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in j_ex]
             hdf5_path_to = os.path.join(hdf5_dir, f"{i}/{i}_profiles.h5")
             hdf5_path_from = os.path.join(hdf5_dir, f"{j}/{j}_profiles.h5")
             run_training(
-                bed_paths, hdf5_path_to, hdf5_path_from, train_chroms, val_chroms, test_chroms, f"{i}_from_{j}"
+                bed_paths_to, bed_paths_from, hdf5_path_to, hdf5_path_from, train_chroms, val_chroms, test_chroms, f"{i}_from_{j}"
             )

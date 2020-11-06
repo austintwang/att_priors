@@ -5,6 +5,7 @@ import sacred
 from datetime import datetime
 import h5py
 import feature.util as util
+import operator
 
 dataset_ex = sacred.Experiment("dataset_transfer")
 
@@ -15,6 +16,8 @@ def config():
 
     # Path to chromosome sizes
     chrom_sizes_tsv = "/users/amtseng/genomes/hg38.canon.chrom.sizes"
+
+    sig_thresh = -np.log10(0.05)
 
     # The size of DNA sequences to fetch as input sequences
     input_length = 1346
@@ -205,10 +208,10 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
             each epoch
     """
     def __init__(
-        self, pos_coords_beds, batch_size, neg_ratio, jitter, chrom_sizes_tsv,
+        self, pos_coords_beds, pos_coords_beds_trans, batch_size, neg_ratio, jitter, chrom_sizes_tsv,
         sample_length, genome_sampler, chroms_keep=None, peak_retention=None,
         return_peaks=False, shuffle_before_epoch=False, jitter_seed=None,
-        shuffle_seed=None
+        shuffle_seed=None, sig_thresh=None, peaks_thresh_type=None, peaks_trans_thresh_type=None
     ):
         self.batch_size = batch_size
         self.neg_ratio = neg_ratio
@@ -218,15 +221,37 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
         self.shuffle_before_epoch = shuffle_before_epoch
 
         chrom_sizes_table = self._import_chrom_sizes(chrom_sizes_tsv)
+        
+        if peaks_trans_thresh_type is None:
+            peaks_query = None
+        else:
+            peaks_query = {}
+            if peaks_trans_thresh_type == "sig":
+                cmp_fn = operator.ge
+            elif peaks_trans_thresh_type == "insig":
+                cmp_fn = operator.lt
+            for pos_coords_bed_trans in pos_coords_beds_trans:
+                peaks_table_trans = self._import_peaks(pos_coords_bed_trans)
+                selects = peaks_table_trans.loc[cmp_fn(peaks_tables_trans["pval"], sig_thresh)]
+                set([i["peak_start"], i["peak_end"] for i in selects])
+                for peak in selects:
+                    chrom = peak["chrom"]
+                    start = peak["peak_start"]
+                    end = peak["peak_end"]
+                    begin_hash = int(start) // 1000
+                    end_hash = int(end) // 1000
+                    for pos_hash in range(begin_hash, end_hash + 1):
+                        peaks_query.setdefault((chrom, pos_hash), set()).add((start, end),)
 
         all_pos_table = []
-        for i, pos_coords_bed in enumerate(pos_coords_beds):
+        for pos_coords_bed in pos_coords_beds:
             peaks_table = self._import_peaks(pos_coords_bed)
+            table_filtered = peaks_table.apply(lambda r: self._query_peak(peaks_query, r, sig_thresh))
             coords = self._format_peaks_table(
-                peaks_table, chroms_keep, peak_retention, sample_length, jitter,
+                table_filtered, chroms_keep, peak_retention, sample_length, jitter,
                 chrom_sizes_table
             )
-            
+
             # Add in the status column
             coords = np.concatenate(
                 [coords, np.tile(i + 1, (len(coords), 1))], axis=1
@@ -246,6 +271,30 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
 
         if self.jitter:
             self.jitter_rng = np.random.RandomState(jitter_seed)
+
+    def _query_peak(query_table, peak, sig_thresh):
+        if sig_thresh:
+            if peak["pval"] < sig_thresh:
+                return False
+
+        if query_table is None:
+            return True
+
+        chrom = peak["chrom"]
+        start = peak["peak_start"]
+        end = peak["peak_end"]
+        begin_hash = int(start) // 1000
+        end_hash = int(end) // 1000
+        candidates = set()
+        for pos_hash in range(begin_hash, end_hash + 1):
+            candidates |= query_table[(chrom, pos_hash,)]
+
+        for c in candidates:
+            start_c, end_c = c
+            if start <= end_c and start_c <= end:
+                return True
+
+        return False
 
     def _import_peaks(self, peaks_bed):
         """
@@ -684,10 +733,10 @@ class CoordDatasetTrans(CoordDataset):
 
 @dataset_ex.capture
 def create_data_loader(
-    peaks_bed_paths, profile_hdf5_path, profile_trans_hdf5_path, sampling_type, batch_size,
+    peaks_bed_paths, peak_bed_trans_paths, profile_hdf5_path, profile_trans_hdf5_path, sampling_type, batch_size,
     reference_fasta, chrom_sizes_tsv, input_length, profile_length,
     negative_ratio, peak_tiling_stride, peak_retention, num_workers, revcomp,
-    jitter_size, negative_seed, shuffle_seed, jitter_seed, chrom_set=None,
+    jitter_size, negative_seed, shuffle_seed, jitter_seed, sig_thresh, chrom_set=None,
     shuffle=True, return_coords=False
 ):
     """
@@ -729,7 +778,7 @@ def create_data_loader(
         )
         # Yields batches of positive and negative coordinates
         coords_batcher = SamplingCoordsBatcher(
-            peaks_bed_paths, batch_size, negative_ratio, jitter_size,
+            peaks_bed_paths, peak_bed_trans_paths, batch_size, negative_ratio, jitter_size,
             chrom_sizes_tsv, input_length, genome_sampler,
             chroms_keep=chrom_set, peak_retention=peak_retention,
             return_peaks=return_coords, shuffle_before_epoch=shuffle,
@@ -738,14 +787,78 @@ def create_data_loader(
     elif sampling_type == "SummitCenteringCoordsBatcher":
         # Yields batches of positive coordinates, centered at summits
         coords_batcher = SummitCenteringCoordsBatcher(
-            peaks_bed_paths, batch_size, chrom_sizes_tsv, input_length,
+            peaks_bed_paths, peak_bed_trans_paths, batch_size, chrom_sizes_tsv, input_length,
             chroms_keep=chrom_set, return_peaks=return_coords,
             shuffle_before_epoch=shuffle, shuffle_seed=shuffle_seed
+        )
+    elif sampling_type == "SummitCenteringCoordsBatcherToSig":
+        # Yields batches of positive coordinates, centered at summits
+        coords_batcher = SummitCenteringCoordsBatcher(
+            peaks_bed_paths, peak_bed_trans_paths, batch_size, chrom_sizes_tsv, input_length,
+            chroms_keep=chrom_set, return_peaks=return_coords,
+            shuffle_before_epoch=shuffle, shuffle_seed=shuffle_seed,
+            sig_thresh=sig_thresh, peaks_thresh_type="sig", peaks_trans_thresh_type=None
+        )
+    elif sampling_type == "SummitCenteringCoordsBatcherFromSig":
+        # Yields batches of positive coordinates, centered at summits
+        coords_batcher = SummitCenteringCoordsBatcher(
+            peaks_bed_paths, peak_bed_trans_paths, batch_size, chrom_sizes_tsv, input_length,
+            chroms_keep=chrom_set, return_peaks=return_coords,
+            shuffle_before_epoch=shuffle, shuffle_seed=shuffle_seed,
+            sig_thresh=sig_thresh, peaks_thresh_type=None, peaks_trans_thresh_type="sig"
+        )
+    elif sampling_type == "SummitCenteringCoordsBatcherToSigFromSig":
+        # Yields batches of positive coordinates, centered at summits
+        coords_batcher = SummitCenteringCoordsBatcher(
+            peaks_bed_paths, peak_bed_trans_paths, batch_size, chrom_sizes_tsv, input_length,
+            chroms_keep=chrom_set, return_peaks=return_coords,
+            shuffle_before_epoch=shuffle, shuffle_seed=shuffle_seed,
+            sig_thresh=sig_thresh, peaks_thresh_type="sig", peaks_trans_thresh_type="sig"
+        )
+    elif sampling_type == "SummitCenteringCoordsBatcherToSigFromSig":
+        # Yields batches of positive coordinates, centered at summits
+        coords_batcher = SummitCenteringCoordsBatcher(
+            peaks_bed_paths, peak_bed_trans_paths, batch_size, chrom_sizes_tsv, input_length,
+            chroms_keep=chrom_set, return_peaks=return_coords,
+            shuffle_before_epoch=shuffle, shuffle_seed=shuffle_seed,
+            sig_thresh=sig_thresh, peaks_thresh_type="sig", peaks_trans_thresh_type="sig"
+        )
+    elif sampling_type == "SummitCenteringCoordsBatcherToInsigFromSig":
+        # Yields batches of positive coordinates, centered at summits
+        coords_batcher = SummitCenteringCoordsBatcher(
+            peaks_bed_paths, peak_bed_trans_paths, batch_size, chrom_sizes_tsv, input_length,
+            chroms_keep=chrom_set, return_peaks=return_coords,
+            shuffle_before_epoch=shuffle, shuffle_seed=shuffle_seed,
+            sig_thresh=sig_thresh, peaks_thresh_type="insig", peaks_trans_thresh_type="sig"
+        )
+    elif sampling_type == "SummitCenteringCoordsBatcherToSigFromInsig":
+        # Yields batches of positive coordinates, centered at summits
+        coords_batcher = SummitCenteringCoordsBatcher(
+            peaks_bed_paths, peak_bed_trans_paths, batch_size, chrom_sizes_tsv, input_length,
+            chroms_keep=chrom_set, return_peaks=return_coords,
+            shuffle_before_epoch=shuffle, shuffle_seed=shuffle_seed,
+            sig_thresh=sig_thresh, peaks_thresh_type="sig", peaks_trans_thresh_type="insig"
+        )
+    elif sampling_type == "SummitCenteringCoordsBatcherToSigFromSig":
+        # Yields batches of positive coordinates, centered at summits
+        coords_batcher = SummitCenteringCoordsBatcher(
+            peaks_bed_paths, peak_bed_trans_paths, batch_size, chrom_sizes_tsv, input_length,
+            chroms_keep=chrom_set, return_peaks=return_coords,
+            shuffle_before_epoch=shuffle, shuffle_seed=shuffle_seed,
+            sig_thresh=sig_thresh, peaks_thresh_type="sig", peaks_trans_thresh_type="sig"
+        )
+    elif sampling_type == "SummitCenteringCoordsBatcherToInsigFromInsig":
+        # Yields batches of positive coordinates, centered at summits
+        coords_batcher = SummitCenteringCoordsBatcher(
+            peaks_bed_paths, peak_bed_trans_paths, batch_size, chrom_sizes_tsv, input_length,
+            chroms_keep=chrom_set, return_peaks=return_coords,
+            shuffle_before_epoch=shuffle, shuffle_seed=shuffle_seed,
+            sig_thresh=sig_thresh, peaks_thresh_type="insig", peaks_trans_thresh_type="insig"
         )
     else:
         # Yields batches of positive coordinates, tiled across peaks
         coords_batcher = PeakTilingCoordsBatcher(
-            peaks_bed_paths, peak_tiling_stride, batch_size, chrom_sizes_tsv,
+            peaks_bed_paths, peak_bed_trans_paths, peak_tiling_stride, batch_size, chrom_sizes_tsv,
             input_length, chroms_keep=chrom_set, return_peaks=return_coords,
             shuffle_before_epoch=shuffle, shuffle_seed=shuffle_seed
         )

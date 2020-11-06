@@ -719,6 +719,7 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
         self.prof_trans_conv_kernel_size = kwargs["prof_trans_conv_kernel_size"]
         self.prof_trans_conv_channels = kwargs["prof_trans_conv_channels"]
         self.prof_conv_kernel_size = kwargs["prof_conv_kernel_size"]
+        print(self.parameters()) ####
 
         self.count_one_conv_3 = torch.nn.Conv1d(
             in_channels=(self.num_tasks * 3 * self.num_strands),
@@ -756,12 +757,12 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
             ])
         self.ptp_conv = self.ptp_layers["ptp_conv"] = torch.nn.Sequential(*ptp_conv_layers)
 
-    def freeze_ptp_layers(self):
+    def set_aux_mode(self):
         for k, v in self.ptp_layers.items():
             for name, param in v.named_parameters():
                 param.requires_grad = False
 
-    def unfreeze_ptp_layers(self):
+    def set_seq_mode(self):
         for k, v in self.ptp_layers.items():
             for name, param in v.named_parameters():
                 param.requires_grad = True
