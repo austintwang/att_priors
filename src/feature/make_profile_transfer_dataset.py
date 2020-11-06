@@ -282,9 +282,9 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
 
     @staticmethod
     def _query_peak(query_table, peak, sig_thresh, cmp_fn):
-        print(peak["pval"], sig_thresh) ####
+        # print(peak["pval"], sig_thresh) ####
         if sig_thresh and cmp_fn is not None:
-            if cmp_fn(peak["pval"], sig_thresh):
+            if not cmp_fn(peak["pval"], sig_thresh):
                 return False
 
         if query_table is None:
@@ -303,6 +303,8 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
             start_c, end_c = c
             if start <= end_c and start_c <= end:
                 return True
+
+        print(candidates) ####
 
         return False
 
