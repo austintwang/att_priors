@@ -889,7 +889,7 @@ def main():
             if i == j:
                 continue
             bed_paths_to = [os.path.join(bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in i_ex]
-            bed_paths_from = [os.path.join(bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in j_ex]
+            bed_paths_from = [os.path.join(bed_dir, f"DNase_{ex}_{j}_idr-optimal-peaks.bed.gz") for ex in j_ex]
             hdf5_path_to = os.path.join(hdf5_dir, f"{i}/{i}_profiles.h5")
             hdf5_path_from = os.path.join(hdf5_dir, f"{j}/{j}_profiles.h5")
             run_training(
