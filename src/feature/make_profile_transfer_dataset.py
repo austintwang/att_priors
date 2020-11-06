@@ -464,7 +464,7 @@ class SummitCenteringCoordsBatcher(SamplingCoordsBatcher):
             each epoch
     """
     def __init__(
-        self, pos_coords_beds, batch_size, chrom_sizes_tsv, sample_length,
+        self, pos_coords_beds, pos_coords_beds_trans, batch_size, chrom_sizes_tsv, sample_length,
         chroms_keep=None, return_peaks=False, shuffle_before_epoch=False,
         shuffle_seed=None
     ):
@@ -473,6 +473,7 @@ class SummitCenteringCoordsBatcher(SamplingCoordsBatcher):
         # already centered at the summits
         super().__init__(
             pos_coords_beds=pos_coords_beds,
+            pos_coords_beds_trans=pos_coords_beds_trans,
             batch_size=batch_size,
             neg_ratio=0,
             jitter=0,
@@ -505,7 +506,7 @@ class PeakTilingCoordsBatcher(SamplingCoordsBatcher):
             each epoch
     """
     def __init__(
-        self, pos_coords_beds, stride, batch_size, chrom_sizes_tsv,
+        self, pos_coords_beds, pos_coords_beds_trans, stride, batch_size, chrom_sizes_tsv,
         sample_length, chroms_keep=None, return_peaks=False,
         shuffle_before_epoch=False, shuffle_seed=None
     ):
