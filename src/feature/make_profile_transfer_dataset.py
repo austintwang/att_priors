@@ -233,8 +233,9 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
             for pos_coords_bed_trans in pos_coords_beds_trans:
                 peaks_table_trans = self._import_peaks(pos_coords_bed_trans)
                 selects = peaks_table_trans.loc[cmp_fn(peaks_table_trans["pval"], sig_thresh)]
-                print(selects) ####
+                # print(selects) ####
                 for peak in selects:
+                    print(peak) ####
                     chrom = peak["chrom"]
                     start = peak["peak_start"]
                     end = peak["peak_end"]
