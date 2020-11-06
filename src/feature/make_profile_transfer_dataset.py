@@ -466,7 +466,7 @@ class SummitCenteringCoordsBatcher(SamplingCoordsBatcher):
     def __init__(
         self, pos_coords_beds, pos_coords_beds_trans, batch_size, chrom_sizes_tsv, sample_length,
         chroms_keep=None, return_peaks=False, shuffle_before_epoch=False,
-        shuffle_seed=None
+        shuffle_seed=None, sig_thresh=None, peaks_thresh_type=None, peaks_trans_thresh_type=None
     ):
         # Same as a normal SamplingCoordsBatcher, but with no negatives and no
         # jitter, since the coordinates in the positive coordinate BEDs are
@@ -483,7 +483,10 @@ class SummitCenteringCoordsBatcher(SamplingCoordsBatcher):
             chroms_keep=chroms_keep,
             return_peaks=return_peaks,
             shuffle_before_epoch=shuffle_before_epoch,
-            shuffle_seed=shuffle_seed
+            shuffle_seed=shuffle_seed,
+            sig_thresh=sig_thresh, 
+            peaks_thresh_type=peaks_thresh_type, 
+            peaks_trans_thresh_type=peaks_trans_thresh_type
         )
 
         
