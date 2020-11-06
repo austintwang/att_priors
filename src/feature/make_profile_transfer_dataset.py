@@ -262,7 +262,6 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
             all_pos_table.append(coords)
 
         self.all_pos_table = np.concatenate(all_pos_table)  # Shape: N x 7
-        print(all_pos_table) ####
         self.num_total_pos = len(self.all_pos_table)
 
         # Number of positives and negatives per batch
@@ -870,6 +869,8 @@ def create_data_loader(
             input_length, chroms_keep=chrom_set, return_peaks=return_coords,
             shuffle_before_epoch=shuffle, shuffle_seed=shuffle_seed
         )
+
+    print(sampling_type, coords_batcher.num_total_pos) ####
 
     # Maps set of coordinates to 1-hot encoding, padded
     coords_to_seq = util.CoordsToSeq(
