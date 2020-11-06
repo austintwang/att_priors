@@ -245,9 +245,9 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
         all_pos_table = []
         for pos_coords_bed in pos_coords_beds:
             peaks_table = self._import_peaks(pos_coords_bed)
-            rows_filtered = peaks_table.apply(lambda r: self._query_peak(peaks_query, r, sig_thresh))
-            print(rows_filtered) ####
-            print(peaks_table) ####
+            rows_filtered = peaks_table.apply(lambda r: self._query_peak(peaks_query, r, sig_thresh), axis=1)
+            # print(rows_filtered) ####
+            # print(peaks_table) ####
             table_filtered = peaks_table.loc[rows_filtered]
             coords = self._format_peaks_table(
                 table_filtered, chroms_keep, peak_retention, sample_length, jitter,
