@@ -765,10 +765,10 @@ def create_data_loader(
         `return_coords`: if specified, also return the underlying coordinates
             and peak data along with the profiles in each batch
     """
-    assert sampling_type in (
-            "SamplingCoordsBatcher", "SummitCenteringCoordsBatcher",
-            "PeakTilingCoordsBatcher"
-    )
+    # assert sampling_type in (
+    #         "SamplingCoordsBatcher", "SummitCenteringCoordsBatcher",
+    #         "PeakTilingCoordsBatcher"
+    # )
 
     # Maps set of coordinates to profiles
     coords_to_vals = CoordsToVals(profile_hdf5_path, profile_length)
