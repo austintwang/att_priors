@@ -820,10 +820,10 @@ def run_training(
             return_coords=True, chrom_set=val_chroms, peak_retention=None
             # Use the whole validation set
         ),
-        "test_summit": make_profile_transfer_dataset.create_data_loader(
-            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SummitCenteringCoordsBatcher",
-            return_coords=True, revcomp=False, chrom_set=test_chroms
-        ),
+        # "test_summit": make_profile_transfer_dataset.create_data_loader(
+        #     peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SummitCenteringCoordsBatcher",
+        #     return_coords=True, revcomp=False, chrom_set=test_chroms
+        # ),
         "test_summit_to_sig": make_profile_transfer_dataset.create_data_loader(
             peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SummitCenteringCoordsBatcherToSig",
             return_coords=True, revcomp=False, chrom_set=test_chroms
@@ -848,10 +848,10 @@ def run_training(
             peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SummitCenteringCoordsBatcherToSigFromSig",
             return_coords=True, revcomp=False, chrom_set=test_chroms
         ),
-        "test_summit_to_insig_from_insig": make_profile_transfer_dataset.create_data_loader(
-            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SummitCenteringCoordsBatcherToInsigFromInsig",
-            return_coords=True, revcomp=False, chrom_set=test_chroms
-        ),
+        # "test_summit_to_insig_from_insig": make_profile_transfer_dataset.create_data_loader(
+        #     peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SummitCenteringCoordsBatcherToInsigFromInsig",
+        #     return_coords=True, revcomp=False, chrom_set=test_chroms
+        # ),
         "test_peak": make_profile_transfer_dataset.create_data_loader(
             peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "PeakTilingCoordsBatcher",
             return_coords=True, chrom_set=test_chroms

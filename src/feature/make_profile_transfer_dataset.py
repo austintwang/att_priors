@@ -803,7 +803,7 @@ def create_data_loader(
             return_peaks=return_coords, shuffle_before_epoch=shuffle,
             jitter_seed=jitter_seed, shuffle_seed=shuffle_seed
         )
-    elif sampling_type == "SummitCenteringCoordsBatcher":
+    elif sampling_type == "SummitCenteringCoordsBatcherToSig":
         # Yields batches of positive coordinates, centered at summits
         coords_batcher = SummitCenteringCoordsBatcher(
             peaks_bed_paths, peak_bed_trans_paths, batch_size, chrom_sizes_tsv, input_length,
