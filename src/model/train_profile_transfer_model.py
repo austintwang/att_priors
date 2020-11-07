@@ -597,11 +597,9 @@ def train_model(
     val_loader = loaders["val"]
     test_genome_loader = loaders["test_genome"]
     test_loaders = [
-        (loaders["test_summit"], "summit"),
         (loaders["test_summit_to_sig"], "summit_to_sig"),
         (loaders["test_summit_from_sig"], "summit_from_sig"),
         (loaders["test_summit_to_sig_from_sig"], "summit_to_sig_from_sig"),
-        (loaders["test_summit_to_insig_from_insig"], "test_summit_to_insig_from_insig"),
         (loaders["test_summit_to_insig_from_sig"], "test_summit_to_insig_from_sig"),
         (loaders["test_summit_to_sig_from_insig"], "test_summit_to_sig_from_insig"),
     ]
