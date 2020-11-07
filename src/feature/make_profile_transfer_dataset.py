@@ -253,7 +253,7 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
         for i, pos_coords_bed in enumerate(pos_coords_beds):
             peaks_table = self._import_peaks(pos_coords_bed)
             rows_filtered = peaks_table.apply(lambda r: self._query_peak(peaks_query, r, peaks_trans_thresh_type), axis=1)
-            print(np.mean(rows_filtered)) ####
+            # print(np.mean(rows_filtered)) ####
             # print(peaks_table) ####
             table_filtered = peaks_table.loc[rows_filtered]
             coords = self._format_peaks_table(
@@ -865,7 +865,7 @@ def create_data_loader(
             shuffle_before_epoch=shuffle, shuffle_seed=shuffle_seed
         )
 
-    print(sampling_type, coords_batcher.num_total_pos) ####
+    # print(sampling_type, coords_batcher.num_total_pos) ####
 
     # Maps set of coordinates to 1-hot encoding, padded
     coords_to_seq = util.CoordsToSeq(

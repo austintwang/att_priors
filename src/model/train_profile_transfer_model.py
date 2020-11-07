@@ -12,7 +12,8 @@ import feature.make_profile_transfer_dataset as make_profile_transfer_dataset
 
 MODEL_DIR = os.environ.get(
     "MODEL_DIR",
-    "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_test/"
+    "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_test/", ####
+    # "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_v1/"
 )
 
 train_ex = sacred.Experiment("train_transfer", ingredients=[
@@ -117,7 +118,7 @@ def config(dataset_transfer):
         "num_epochs": 20,
 
         # "num_epochs_prof": 20,
-        "num_epochs_prof": 1,
+        "num_epochs_prof": 1, ####
 
         # Learning rate
         "learning_rate": 0.001,
@@ -718,7 +719,7 @@ def train_model(
 
         t_batch_losses, t_corr_losses, t_att_losses, t_prof_losses, \
             t_count_losses = run_epoch(
-                train_loader, "train", model, epoch, optimizer=optimizer, ignore_aux=True
+                train_loader, "train", model, epoch, optimizer=optimizer, seq_mode=True
         )
         train_epoch_loss = np.nanmean(t_batch_losses)
         print(
