@@ -214,7 +214,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
 
         sns.set("whitegrid")
         hist_data = np.stack([nogenome_vals, genome_vals], axis=-1)
-        hist_df = pd.DataFrame(hist_data, columns="No Genome", "With Genome")
+        hist_df = pd.DataFrame(hist_data, columns=["No Genome", "With Genome"])
         sns.histplot(data=hist_df)
 
         # vals_to_return.append((metric_name, nogenome_vals, genome_vals))
