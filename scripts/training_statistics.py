@@ -132,7 +132,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
     # print(nogenome_query_run, genome_query_run) ####
     loaders = [
         "summit_to_sig",
-        "summit_to_insig",
+        "summit_from_sig",
         "summit_to_sig_from_sig",
         "summit_to_sig_from_insig",
         "summit_to_insig_from_sig",
@@ -189,7 +189,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
                 # print(run, mean, run == nogenome_query_run) ####
                 nogenome_mean = mean
             # print(np.([j["values"] for i in metrics[nogenome_key] for j in i]))
-        print(nogenome_mean) ####
+        # print(nogenome_mean) ####
         nogenome_vals = np.array(nogenome_vals)
         # nogenome_vals = np.array([
         #     np.mean(metrics[nogenome_key]["values"]) for metrics in model_metrics.values()
@@ -248,7 +248,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
             print(e)
             u, p = np.nan, np.nan
 
-        txt_path = os.path.join(out_dir, f"metric_{metric_key}.txt")
+        txt_path = os.path.join(plt_dir, f"{loader_name}.txt")
         with open(txt_path, "w") as txt_file:
             print("Mean without genomes: %f" % np.mean(nogenome_vals), file=txt_file)
             print("Mean with genomes: %f" % np.mean(genome_vals), file=txt_file)
