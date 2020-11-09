@@ -17,17 +17,17 @@ font_manager.fontManager.ttflist.extend(
     )
 )
 
-plot_params = {
-    "figure.titlesize": 22,
-    "axes.titlesize": 22,
-    "axes.labelsize": 20,
-    "legend.fontsize": 18,
-    "xtick.labelsize": 16,
-    "ytick.labelsize": 16,
-    "font.family": "Roboto",
-    "font.weight": "bold"
-}
-plt.rcParams.update(plot_params)
+# plot_params = {
+#     "figure.titlesize": 22,
+#     "axes.titlesize": 22,
+#     "axes.labelsize": 20,
+#     "legend.fontsize": 18,
+#     "xtick.labelsize": 16,
+#     "ytick.labelsize": 16,
+#     "font.family": "Roboto",
+#     "font.weight": "bold"
+# }
+# plt.rcParams.update(plot_params)
 
 
 def import_metrics_json(models_path, run_num):
@@ -212,7 +212,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
         #     np.mean(metrics[genome_key]["values"]) for metrics in model_metrics.values()
         # ])
 
-        sns.set("whitegrid")
+        sns.set(style="whitegrid", font="Roboto")
         hist_data = np.stack([nogenome_vals, genome_vals], axis=-1)
         hist_df = pd.DataFrame(hist_data, columns=["No Genome", "With Genome"])
         sns.histplot(data=hist_df)
@@ -264,7 +264,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
     return vals_to_return  # List of metric name, nogenome values, and genome values
 
 def create_violin_pair(ax, nogenome_data, genome_data, metric_name, out_dir):
-    print(nogenome_data, genome_data) ####
+    # print(nogenome_data, genome_data) ####
     all_data = np.stack([nogenome_data, genome_data], axis=0)
     # Define the quartiles
     q1, med, q3 = np.percentile(all_data, [25, 50, 70], axis=1)
