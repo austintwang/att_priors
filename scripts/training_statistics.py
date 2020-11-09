@@ -134,9 +134,10 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
         "summit_to_sig",
         "summit_from_sig",
         "summit_to_sig_from_sig",
-        "summit_to_sig_from_insig",
-        "summit_to_insig_from_sig",
-        "summit_to_sig_from_insig",
+        # "summit_to_insig_from_sig",
+        # "summit_to_sig_from_insig",
+        "test_summit_to_insig_from_sig",
+        "test_summit_to_sig_from_insig",
     ]
 
     metric_keys = []
