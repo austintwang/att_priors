@@ -67,11 +67,11 @@ def get_best_metric_at_best_epoch(models_path, metric_name, reduce_func, compare
     best_run, best_epoch, best_val, all_vals = None, None, None, {}
     for run_num in metrics.keys():
         # print(metrics[run_num].keys()) ####
-        try:
-            a = metrics[run_num][metric_name] ####
-        except KeyError as e:
-            print(metrics[run_num].keys())
-            print(e)
+        # try:
+        #     a = metrics[run_num][metric_name] ####
+        # except KeyError as e:
+        #     print(metrics[run_num].keys())
+        #     print(e)
         try:
             # Find the best epoch within that run
             best_epoch_in_run, best_val_in_run = None, None
@@ -358,6 +358,8 @@ if __name__ == '__main__':
     cell_types = ["K562", "HepG2"]
     for i in cell_types:
         for j in cell_types:
+            if i == j:
+                continue
             genome_prefix = f"{i}_from_{j}"
             nogenome_prefix = f"{i}_from_{j}_aux"
             # nogenome_prefix = f"{i}_from_{i}" ####
