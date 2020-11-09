@@ -7,6 +7,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 import scipy.stats
+import pandas as pd 
+import seaborn as sns
 
 # Plotting defaults
 font_manager.fontManager.ttflist.extend(
@@ -128,19 +130,34 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
     #     ]
     # else:
     # print(nogenome_query_run, genome_query_run) ####
-    metric_keys = [
-        ("summit_prof_nll", "test profile NLL", "greater"),
-        ("summit_prof_jsd", "test profile JSD", "greater"),
-        ("summit_prof_spearman_bin1", "test profile Spearman r, bin size 1", "greater"),
-        ("summit_prof_pearson_bin1", "test profile Pearson r, bin size 1", "greater"),
-        ("summit_prof_mse_bin1", "test profile MSE, bin size 1", "greater"),
-        ("summit_prof_spearman_bin4", "test profile Spearman r, bin size 4", "greater"),
-        ("summit_prof_pearson_bin4", "test profile Pearson r, bin size 4", "greater"),
-        ("summit_prof_mse_bin4", "test profile MSE, bin size 4", "greater"),
-        ("summit_prof_spearman_bin10", "test profile Spearman r, bin size 10", "greater"),
-        ("summit_prof_pearson_bin10", "test profile Pearson r, bin size 10", "greater"),
-        ("summit_prof_mse_bin10", "test profile MSE, bin size 10", "greater")
+    loaders = [
+        "summit_to_sig",
+        "summit_to_insig",
+        "summit_to_sig_from_sig",
+        "summit_to_sig_from_insig",
+        "summit_to_insig_from_sig",
+        "summit_to_sig_from_insig",
     ]
+
+    metric_keys = []
+    for i in loaders:
+        metric_keys_spec = [
+            (i, "prof_nll", "test profile NLL", "greater", (0, None)),
+            (i, "prof_jsd", "test profile JSD", "greater", (0, None)),
+            (i, "prof_spearman_bin1", "test profile Spearman r, bin size 1", "greater", (0, 1)),
+            (i, "prof_pearson_bin1", "test profile Pearson r, bin size 1", "greater", (0, 1)),
+            (i, "prof_mse_bin1", "test profile MSE, bin size 1", "greater", (0, None)),
+            (i, "prof_spearman_bin4", "test profile Spearman r, bin size 4", "greater", (0, 1)),
+            (i, "prof_pearson_bin4", "test profile Pearson r, bin size 4", "greater", (0, 1)),
+            (i, "prof_mse_bin4", "test profile MSE, bin size 4", "greater", (0, None)),
+            (i, "prof_spearman_bin10", "test profile Spearman r, bin size 10", "greater", (0, 1)),
+            (i, "prof_pearson_bin10", "test profile Pearson r, bin size 10", "greater", (0, 1)),
+            (i, "prof_mse_bin10", "test profile MSE, bin size 10", "greater", (0, None)),
+            (i, "count_spearman", "test count Spearman r, bin size 10", "greater", (0, 1)),
+            (i, "count_pearson", "test count Pearson r, bin size 10", "greater", (0, 1)),
+            (i, "count_mse", "test count MSE, bin size 10", "greater", (0, None))
+        ]
+        metric_keys.extend(metric_keys_spec)
     
     # Get the metrics, ignoring empty or nonexistent metrics.json files
     model_metrics = {run_num : import_metrics_json(models_path, run_num) for run_num in os.listdir(models_path)}
@@ -149,25 +166,27 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
     vals_to_return = []
     
     # print(out_dir) ####
-    for metric_key, metric_name, test_alternative in metric_keys:
+    for loader_name, metric_key, metric_name, test_alternative, bounds in metric_keys:
         # print(out_dir) ####
-        plt_path = os.path.join(out_dir, f"metric_{metric_key}.svg")
+        plt_dir = os.path.join(out_dir, metric_key)
+        os.makedirs(plt_dir, exist_ok=True)
+        plt_path = os.path.join(plt_dir, f"{loader_name}.svg")
         # print(out_dir) ####
-        nogenome_key = f"{nogenome_prefix}_{metric_key}"
+        nogenome_key = f"{nogenome_prefix}_{loader_name}_{metric_key}"
         # print([[k for j in i for k in j] for metrics in model_metrics.values() for i in metrics.get(nogenome_key, {}).get("values", [[],])]) ####
         nogenome_vals = []
         nogenome_mean = np.nan
         for run, metrics in model_metrics.items():
             # print(metrics.keys()) ####
             if nogenome_key not in metrics:
-                print(nogenome_key) ####
+                # print(nogenome_key) ####
                 nogenome_vals.append(np.nan)
                 continue
             vals = metrics[nogenome_key]["values"]
             mean = np.mean([j["value"] for i in vals for j in i])
             nogenome_vals.append(mean)
             if run == nogenome_query_run:
-                print(run, mean, run == nogenome_query_run) ####
+                # print(run, mean, run == nogenome_query_run) ####
                 nogenome_mean = mean
             # print(np.([j["values"] for i in metrics[nogenome_key] for j in i]))
         print(nogenome_mean) ####
@@ -175,7 +194,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
         # nogenome_vals = np.array([
         #     np.mean(metrics[nogenome_key]["values"]) for metrics in model_metrics.values()
         # ])
-        genome_key = f"{genome_prefix}_{metric_key}"
+        genome_key = f"{genome_prefix}_{loader_name}_{metric_key}"
         genome_vals = []
         genome_mean = np.nan
         for run, metrics in model_metrics.items():
@@ -192,22 +211,35 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
         # genome_vals = np.array([
         #     np.mean(metrics[genome_key]["values"]) for metrics in model_metrics.values()
         # ])
-        vals_to_return.append((metric_name, nogenome_vals, genome_vals))
-        bin_num = 20
-        fig, ax = plt.subplots(figsize=(12, 6))
-        all_vals = np.concatenate([nogenome_vals, genome_vals])
-        bins = np.linspace(np.min(all_vals), np.max(all_vals), bin_num)
-        ax.hist(nogenome_vals, bins=bins, color="coral", label="No genome", alpha=0.7)
-        ax.hist(genome_vals, bins=bins, color="slateblue", label="With genome", alpha=0.7)
-        title = "Histogram of %s without/with genomes" % metric_name
-        title += "\n%s, %d/%d %s models" % ("BPNet", len(nogenome_vals), len(genome_vals), "profile")
+
+        sns.set("whitegrid")
+        hist_data = np.stack([nogenome_vals, genome_vals], axis=-1)
+        hist_df = pd.DataFrame(hist_data, columns="No Genome", "With Genome")
+        sns.histplot(data=hist_df)
+
+        # vals_to_return.append((metric_name, nogenome_vals, genome_vals))
+        # bin_num = 20
+        # fig, ax = plt.subplots(figsize=(12, 6))
+        # all_vals = np.concatenate([nogenome_vals, genome_vals])
+        # bins = np.linspace(np.min(all_vals), np.max(all_vals), bin_num)
+        # ax.hist(nogenome_vals, bins=bins, color="coral", label="No genome", alpha=0.7)
+        # ax.hist(genome_vals, bins=bins, color="slateblue", label="With genome", alpha=0.7)
+        title = "Histogram of %s without/with genome" % metric_name
+        title += "\n%s, %d/%d %s models" % ("DNAse", len(nogenome_vals), len(genome_vals), "profile")
         if peak_retention != "all":
             title += "\nTraining on %s peaks" % peak_retention
-        ax.set_title(title)
-        ax.set_xlabel(metric_name[0].upper() + metric_name[1:])
-        plt.legend()
+        # ax.set_title(title)
+        # ax.set_xlabel(metric_name[0].upper() + metric_name[1:])
+        # plt.legend()
         # print(plt_path) ####
-        plt.savefig(plt_path)
+        left, right = bounds
+        if left is not None:
+            plt.xlim(left=left)
+        if right is not None:
+            plt.xlim(right=right)
+        plt.title(title)
+        plt.savefig(plt_path, bbox_inches='tight')
+        plt.clf()
 
         # print(nogenome_vals, genome_vals, test_alternative) ####
         try:
@@ -237,7 +269,7 @@ def create_violin_pair(ax, nogenome_data, genome_data, metric_name, out_dir):
     # Define the quartiles
     q1, med, q3 = np.percentile(all_data, [25, 50, 70], axis=1)
     iqr = q3 - q1
-    print(all_data[0], all_data[1]) ####
+    # print(all_data[0], all_data[1]) ####
     plot_parts = ax.violinplot(
         [np.sort(all_data[0]), np.sort(all_data[1])], showmeans=False, showmedians=False, showextrema=False
     )
@@ -319,7 +351,7 @@ def plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir, peak_retent
     # plot_violin(test_metrics, nogenome_vals, genome_vals, peak_retention, out_dir)
 
 if __name__ == '__main__':
-    models_path = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/profile/misc/"
+    models_path = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_v2/"
     out_dir_base = "/users/atwang/results/domain_adapt_results/dnase_models/"
     # models_path = "/users/atwang/transfer/models/trained_models/profile/misc/"
     peak_retention = "all"
@@ -333,17 +365,17 @@ if __name__ == '__main__':
             os.makedirs(out_dir, exist_ok=True)
             plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir, peak_retention)
 
-    models_path = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/baseline/"
-    out_dir_base = "/users/atwang/results/domain_adapt_results/dnase_models_baseline/"
-    peak_retention = "all"
-    cell_types = ["K562", "HepG2"]
-    for i in cell_types:
-        genome_prefix = f"{i}_dnase_base"
-        nogenome_prefix = f"{i}_dnase_base"
-        # nogenome_prefix = f"{i}_from_{i}" ####
-        out_dir = os.path.join(out_dir_base, genome_prefix)
-        os.makedirs(out_dir, exist_ok=True)
-        plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir, peak_retention)
+    # models_path = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/baseline/"
+    # out_dir_base = "/users/atwang/results/domain_adapt_results/dnase_models_baseline/"
+    # peak_retention = "all"
+    # cell_types = ["K562", "HepG2"]
+    # for i in cell_types:
+    #     genome_prefix = f"{i}_dnase_base"
+    #     nogenome_prefix = f"{i}_dnase_base"
+    #     # nogenome_prefix = f"{i}_from_{i}" ####
+    #     out_dir = os.path.join(out_dir_base, genome_prefix)
+    #     os.makedirs(out_dir, exist_ok=True)
+    #     plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir, peak_retention)
     
     
 
