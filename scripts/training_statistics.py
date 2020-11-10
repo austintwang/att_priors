@@ -143,17 +143,17 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
     metric_keys = []
     for i in loaders:
         metric_keys_spec = [
-            (i, "prof_nll", "test profile NLL", "greater", (0, None)),
-            (i, "prof_jsd", "test profile JSD", "greater", (0, None)),
+            (i, "prof_nll", "test profile NLL", "greater", (0, 7000)),
+            (i, "prof_jsd", "test profile JSD", "greater", (0, 0.3)),
             (i, "prof_spearman_bin1", "test profile Spearman r, bin size 1", "greater", (0, 1)),
             (i, "prof_pearson_bin1", "test profile Pearson r, bin size 1", "greater", (0, 1)),
-            (i, "prof_mse_bin1", "test profile MSE, bin size 1", "greater", (0, None)),
+            (i, "prof_mse_bin1", "test profile MSE, bin size 1", "greater", (0, 5.5e-5)),
             (i, "prof_spearman_bin4", "test profile Spearman r, bin size 4", "greater", (0, 1)),
             (i, "prof_pearson_bin4", "test profile Pearson r, bin size 4", "greater", (0, 1)),
-            (i, "prof_mse_bin4", "test profile MSE, bin size 4", "greater", (0, None)),
+            (i, "prof_mse_bin4", "test profile MSE, bin size 4", "greater", (0, 5.5e-5)),
             (i, "prof_spearman_bin10", "test profile Spearman r, bin size 10", "greater", (0, 1)),
             (i, "prof_pearson_bin10", "test profile Pearson r, bin size 10", "greater", (0, 1)),
-            (i, "prof_mse_bin10", "test profile MSE, bin size 10", "greater", (0, None)),
+            (i, "prof_mse_bin10", "test profile MSE, bin size 10", "greater", (0, 5.5e-5)),
             (i, "count_spearman", "test count Spearman r, bin size 10", "greater", (0, 1)),
             (i, "count_pearson", "test count Pearson r, bin size 10", "greater", (0, 1)),
             (i, "count_mse", "test count MSE, bin size 10", "greater", (0, None))
