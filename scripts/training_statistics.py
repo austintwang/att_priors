@@ -180,9 +180,9 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
         for run, metrics in model_metrics.items():
             # print(metrics.keys()) ####
             if nogenome_key not in metrics:
-                print(run) ####
-                print(nogenome_key) ####
-                print(metrics.keys()) ####
+                # print(run) ####
+                # print(nogenome_key) ####
+                # print(metrics.keys()) ####
                 nogenome_vals.append(np.nan)
                 continue
             vals = metrics[nogenome_key]["values"]
@@ -228,7 +228,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
         # ax.hist(nogenome_vals, bins=bins, color="coral", label="No genome", alpha=0.7)
         # ax.hist(genome_vals, bins=bins, color="slateblue", label="With genome", alpha=0.7)
         title = "Histogram of %s without/with genome" % metric_name
-        title += "\n%s, %d/%d %s models" % ("DNAse", len(nogenome_vals), len(genome_vals), "profile")
+        title += f"\nDNAse {loader_name}, {len(nogenome_vals)}/{len(genome_vals)} profile models" 
         if peak_retention != "all":
             title += "\nTraining on %s peaks" % peak_retention
         # ax.set_title(title)
