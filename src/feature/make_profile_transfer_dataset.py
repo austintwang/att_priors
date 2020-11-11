@@ -839,7 +839,7 @@ def create_data_loader(
         )
         # Yields batches of positive and negative coordinates
         coords_batcher = SamplingCoordsBatcher(
-            peak_bed_trans_paths, peaks_bed_paths, peak_bed_trans_paths, batch_size, negative_ratio, jitter_size,
+            peak_bed_trans_paths, peaks_bed_paths, batch_size, negative_ratio, jitter_size,
             chrom_sizes_tsv, input_length, genome_sampler,
             chroms_keep=chrom_set, peak_retention=peak_retention,
             return_peaks=return_coords, shuffle_before_epoch=shuffle,
