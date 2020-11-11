@@ -274,7 +274,7 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
                     chrom_sizes_table
                 )
                 coords_trans = np.concatenate(
-                    [coords_trans, np.tile(i + 1, (len(coords), 1))], axis=1
+                    [coords_trans, np.tile(i + 1, (len(coords_trans), 1))], axis=1
                 )  
                 coords = np.concatenate((coords, coords_trans), axis=0)
             
