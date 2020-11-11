@@ -230,8 +230,10 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
             #     cmp_fn = operator.ge
             # elif peaks_trans_thresh_type == "insig":
             #     cmp_fn = operator.lt
+            peaks_tables_trans = []
             for pos_coords_bed_trans in pos_coords_beds_trans:
                 peaks_table_trans = self._import_peaks(pos_coords_bed_trans)
+                peaks_tables_trans.append(peaks_table_trans)
                 # selects = peaks_table_trans.loc[cmp_fn(peaks_table_trans["pval"], sig_thresh)]
                 selects = peaks_table_trans
                 chroms = selects["chrom"]
@@ -244,12 +246,12 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
                         peaks_query.setdefault((chrom, pos_hash), set()).add((start, end),)
 
         all_pos_table = []
-        if peaks_trans_thresh_type == "sig":
-            cmp_fn_pk = operator.ge
-        elif peaks_trans_thresh_type == "insig":
-            cmp_fn_pk = operator.lt
-        else:
-            cmp_fn_pk = None
+        # if peaks_trans_thresh_type == "sig":
+        #     cmp_fn_pk = operator.ge
+        # elif peaks_trans_thresh_type == "insig":
+        #     cmp_fn_pk = operator.lt
+        # else:
+        #     cmp_fn_pk = None
         for i, pos_coords_bed in enumerate(pos_coords_beds):
             peaks_table = self._import_peaks(pos_coords_bed)
             rows_filtered = peaks_table.apply(lambda r: self._query_peak(peaks_query, r, peaks_trans_thresh_type), axis=1)
@@ -265,6 +267,16 @@ class SamplingCoordsBatcher(torch.utils.data.sampler.Sampler):
             coords = np.concatenate(
                 [coords, np.tile(i + 1, (len(coords), 1))], axis=1
             )  # Shape: _ x 7
+
+            if peaks_trans_thresh_type == "union":
+                coords_trans = self._format_peaks_table(
+                    peaks_tables_trans[i], chroms_keep, peak_retention, sample_length, jitter,
+                    chrom_sizes_table
+                )
+                coords_trans = np.concatenate(
+                    [coords_trans, np.tile(i + 1, (len(coords), 1))], axis=1
+                )  
+                coords = np.concatenate((coords, coords_trans), axis=0)
             
             all_pos_table.append(coords)
 
@@ -803,6 +815,37 @@ def create_data_loader(
             return_peaks=return_coords, shuffle_before_epoch=shuffle,
             jitter_seed=jitter_seed, shuffle_seed=shuffle_seed
         )
+
+    elif sampling_type == "SamplingCoordsBatcherIntersect":
+        # Randomly samples from genome
+        genome_sampler = GenomeIntervalSampler(
+            chrom_sizes_tsv, input_length, chroms_keep=chrom_set,
+            seed=negative_seed
+        )
+        # Yields batches of positive and negative coordinates
+        coords_batcher = SamplingCoordsBatcher(
+            peaks_bed_paths, peak_bed_trans_paths, batch_size, negative_ratio, jitter_size,
+            chrom_sizes_tsv, input_length, genome_sampler,
+            chroms_keep=chrom_set, peak_retention=peak_retention,
+            return_peaks=return_coords, shuffle_before_epoch=shuffle,
+            jitter_seed=jitter_seed, shuffle_seed=shuffle_seed, peaks_trans_thresh_type="sig"
+        )
+
+    elif sampling_type == "SamplingCoordsBatcherUnion":
+        # Randomly samples from genome
+        genome_sampler = GenomeIntervalSampler(
+            chrom_sizes_tsv, input_length, chroms_keep=chrom_set,
+            seed=negative_seed
+        )
+        # Yields batches of positive and negative coordinates
+        coords_batcher = SamplingCoordsBatcher(
+            peak_bed_trans_paths, peaks_bed_paths, peak_bed_trans_paths, batch_size, negative_ratio, jitter_size,
+            chrom_sizes_tsv, input_length, genome_sampler,
+            chroms_keep=chrom_set, peak_retention=peak_retention,
+            return_peaks=return_coords, shuffle_before_epoch=shuffle,
+            jitter_seed=jitter_seed, shuffle_seed=shuffle_seed, peaks_trans_thresh_type="union"
+        )
+
     elif sampling_type == "SummitCenteringCoordsBatcherToSig":
         # Yields batches of positive coordinates, centered at summits
         coords_batcher = SummitCenteringCoordsBatcher(

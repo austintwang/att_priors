@@ -12,8 +12,8 @@ import feature.make_profile_transfer_dataset as make_profile_transfer_dataset
 
 MODEL_DIR = os.environ.get(
     "MODEL_DIR",
-    # "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_test/", ####
-    "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_v2/"
+    "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_test/", ####
+    # "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_v2/"
 )
 
 train_ex = sacred.Experiment("train_transfer", ingredients=[
@@ -29,7 +29,7 @@ def config(dataset_transfer):
     controls = "matched"
 
     # Number of dilating convolutional layers to apply
-    num_dil_conv_layers = 7
+    num_dil_conv_layers = 9
 
     # Number of filters to use for each dilating convolutional layer (i.e.
     # number of channels to output)
@@ -51,8 +51,8 @@ def config(dataset_transfer):
         "gpu_id": "4",
         # "gpu_id": "2", ####
 
-        "prof_trans_conv_kernel_size": 3,
-        "prof_trans_conv_channels": [10],
+        "prof_trans_conv_kernel_size": 15,
+        "prof_trans_conv_channels": [5],
 
         # Number of dilating convolutional layers to apply
         "num_dil_conv_layers": num_dil_conv_layers,
@@ -117,8 +117,8 @@ def config(dataset_transfer):
         # Number of training epochs
         "num_epochs": 20,
 
-        "num_epochs_prof": 20,
-        # "num_epochs_prof": 1, ####
+        # "num_epochs_prof": 20,
+        "num_epochs_prof": 1, ####
 
         # Learning rate
         "learning_rate": 0.001,
@@ -594,8 +594,10 @@ def train_model(
     early_stop_min_delta = params["early_stop_min_delta"]
     train_seed = params["train_seed"]
 
-    train_loader = loaders["train"]
-    val_loader = loaders["val"]
+    train_loader_1 = loaders["train_1"]
+    val_loader_1 = loaders["val_1"]
+    train_loader_2 = loaders["train_2"]
+    val_loader_2 = loaders["val_2"]
     test_genome_loader = loaders["test_genome"]
     test_loaders = [
         (loaders["test_summit_to_sig"], "summit_to_sig"),
@@ -634,7 +636,7 @@ def train_model(
 
         t_batch_losses, t_corr_losses, t_att_losses, t_prof_losses, \
             t_count_losses = run_epoch(
-                train_loader, "train", model, epoch, optimizer=optimizer, seq_mode=False
+                train_loader_1, "train", model, epoch, optimizer=optimizer, seq_mode=False
         )
         train_epoch_loss = np.nanmean(t_batch_losses)
         print(
@@ -651,7 +653,7 @@ def train_model(
 
         v_batch_losses, v_corr_losses, v_att_losses, v_prof_losses, \
             v_count_losses = run_epoch(
-                val_loader, "eval", model, epoch
+                val_loader_1, "eval", model, epoch
         )
         val_epoch_loss = np.nanmean(v_batch_losses)
         print(
@@ -719,7 +721,7 @@ def train_model(
 
         t_batch_losses, t_corr_losses, t_att_losses, t_prof_losses, \
             t_count_losses = run_epoch(
-                train_loader, "train", model, epoch, optimizer=optimizer, seq_mode=True
+                train_loader_2, "train", model, epoch, optimizer=optimizer, seq_mode=True
         )
         train_epoch_loss = np.nanmean(t_batch_losses)
         print(
@@ -736,7 +738,7 @@ def train_model(
 
         v_batch_losses, v_corr_losses, v_att_losses, v_prof_losses, \
             v_count_losses = run_epoch(
-                val_loader, "eval", model, epoch
+                val_loader_2, "eval", model, epoch
         )
         val_epoch_loss = np.nanmean(v_batch_losses)
         print(
@@ -810,12 +812,30 @@ def run_training(
     peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, train_chroms, val_chroms, test_chroms, trans_id
 ):
     loaders = {
-        "train": make_profile_transfer_dataset.create_data_loader(
-            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcher",
+        # "train": make_profile_transfer_dataset.create_data_loader(
+        #     peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcher",
+        #     return_coords=True, chrom_set=train_chroms
+        # ),
+        # "val": make_profile_transfer_dataset.create_data_loader(
+        #     peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcher",
+        #     return_coords=True, chrom_set=val_chroms, peak_retention=None
+        #     # Use the whole validation set
+        # ),
+        "train_1": make_profile_transfer_dataset.create_data_loader(
+            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcherIntersect",
             return_coords=True, chrom_set=train_chroms
         ),
-        "val": make_profile_transfer_dataset.create_data_loader(
-            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcher",
+        "val_1": make_profile_transfer_dataset.create_data_loader(
+            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcherIntersect",
+            return_coords=True, chrom_set=val_chroms, peak_retention=None
+            # Use the whole validation set
+        ),
+        "train_2": make_profile_transfer_dataset.create_data_loader(
+            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcherUnion",
+            return_coords=True, chrom_set=train_chroms
+        ),
+        "val_2": make_profile_transfer_dataset.create_data_loader(
+            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SamplingCoordsBatcherUnion",
             return_coords=True, chrom_set=val_chroms, peak_retention=None
             # Use the whole validation set
         ),
