@@ -118,7 +118,7 @@ def config(dataset_transfer):
         "num_epochs": 20,
 
         "num_epochs_prof": 20,
-        "num_epochs_prof": 1, ####
+        # "num_epochs_prof": 1, ####
 
         # Learning rate
         "learning_rate": 0.001,
