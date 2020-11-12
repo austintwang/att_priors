@@ -289,10 +289,9 @@ class ProfilePredictorWithControls(ProfilePredictor):
             (prof_conv_kernel_size - 1)
 
         assert self.prof_pred_size == profile_length, \
-            "Prediction length is specified to be %d, but with the given " +\
-            "input length of %d and the given convolutions, the computed " +\
-            "prediction length is %d" % \
-            (profile_length, input_length, self.prof_pred_size)
+            f"Prediction length is specified to be {profile_length}, but with the given " +\
+            f"input length of {input_length} and the given convolutions, the computed " +\
+            f"prediction length is {self.prof_pred_size}"
 
         # Length-1 convolution over the convolutional output and controls to
         # get the final profile
