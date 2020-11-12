@@ -20,7 +20,7 @@ def config():
     sig_thresh = -np.log10(0.05)
 
     # The size of DNA sequences to fetch as input sequences
-    input_length = 1346
+    input_length = 2114
 
     # The size of profiles to fetch for each coordinate
     profile_length = 1000
