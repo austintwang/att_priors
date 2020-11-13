@@ -417,6 +417,8 @@ def run_epoch(
         all_log_pred_counts = np.empty(count_shape)
         all_true_profs = np.empty(profile_shape)
         all_true_counts = np.empty(count_shape)
+        all_true_profs_trans = np.empty(profile_shape)
+        all_true_counts_trans = np.empty(count_shape)
         all_input_seqs = np.empty((num_samples_exp, input_length, input_depth))
         all_input_grads = np.empty((num_samples_exp, input_length, input_depth))
         all_coords = np.empty((num_samples_exp, 3), dtype=object)
@@ -529,6 +531,8 @@ def run_epoch(
             log_pred_counts_np = log_pred_counts.detach().cpu().numpy()
             true_profs_np = tf_profs.detach().cpu().numpy()
             true_counts = np.sum(true_profs_np, axis=2)
+            true_profs_trans_np = tf_profs_trans.detach().cpu().numpy()
+            true_counts_trans = np.sum(true_profs_trans_np, axis=2)
 
             num_in_batch = true_counts.shape[0]
           
@@ -543,6 +547,8 @@ def run_epoch(
             all_log_pred_counts[start:end] = log_pred_counts_np
             all_true_profs[start:end] = true_profs_np
             all_true_counts[start:end] = true_counts
+            all_true_profs_trans[start:end] = true_profs_trans_np
+            all_true_counts_trans[start:end] = true_counts_trans
             all_input_seqs[start:end] = input_seqs_np
             if att_prior_loss_weight:
                 all_input_grads[start:end] = input_grads_np
@@ -557,13 +563,15 @@ def run_epoch(
         all_log_pred_counts = all_log_pred_counts[:num_samples_seen]
         all_true_profs = all_true_profs[:num_samples_seen]
         all_true_counts = all_true_counts[:num_samples_seen]
+        all_true_profs_trans = all_true_profs[:num_samples_seen]
+        all_true_counts_trans = all_true_counts[:num_samples_seen]
         all_input_seqs = all_input_seqs[:num_samples_seen]
         all_input_grads = all_input_grads[:num_samples_seen]
         all_coords = all_coords[:num_samples_seen]
         return batch_losses, corr_losses, att_losses, prof_losses, \
             count_losses, all_true_profs, all_log_pred_profs, \
             all_true_counts, all_log_pred_counts, all_coords, all_input_grads, \
-            all_input_seqs
+            all_input_seqs, all_true_profs_trans, all_true_counts_trans
     else:
         return batch_losses, corr_losses, att_losses, prof_losses, count_losses
 
@@ -600,6 +608,7 @@ def train_model(
     val_loader_2 = loaders["val_2"]
     test_genome_loader = loaders["test_genome"]
     test_loaders = [
+        (loaders["test_summit_union"], "summit_union"),
         (loaders["test_summit_to_sig"], "summit_to_sig"),
         (loaders["test_summit_from_sig"], "summit_from_sig"),
         (loaders["test_summit_to_sig_from_sig"], "summit_to_sig_from_sig"),
@@ -628,7 +637,9 @@ def train_model(
     if early_stopping:
         val_epoch_loss_hist = []
 
-    best_val_epoch_loss, best_model_state = float("inf"), None
+    best_val_epoch_loss = np.inf
+    best_model_state = None
+    best_model_epoch = None
 
     for epoch in range(num_epochs_prof):
         if torch.cuda.is_available:
@@ -668,10 +679,17 @@ def train_model(
         _run.log_scalar(f"{trans_id}_aux_val_prof_corr_losses", v_prof_losses)
         _run.log_scalar(f"{trans_id}_aux_val_count_corr_losses", v_count_losses)
 
+        # Save trained model for the epoch
+        savepath = os.path.join(
+            output_dir, "model_aux_ckpt_epoch_%d.pt" % (epoch + 1)
+        )
+        util.save_model(model, savepath)
+
         # Save the model state dict of the epoch with the best validation loss
         if val_epoch_loss < best_val_epoch_loss:
             best_val_epoch_loss = val_epoch_loss
             best_model_state = model.state_dict()
+            best_model_epoch = epoch
 
         # If losses are both NaN, then stop
         if np.isnan(train_epoch_loss) and np.isnan(val_epoch_loss):
@@ -690,6 +708,8 @@ def train_model(
                 if best_delta < early_stop_min_delta:
                     break  # Not improving enough
 
+    _run.log_scalar(f"{trans_id}_aux_best_epoch", best_model_epoch)
+
     # Compute evaluation metrics and log them
     # for data_loader, prefix in [
     #     (test_summit_loader, "summit"), # (test_peak_loader, "peak"),
@@ -701,7 +721,7 @@ def train_model(
         model.load_state_dict(best_model_state)
         batch_losses, corr_losses, att_losses, prof_losses, count_losses, \
             true_profs, log_pred_profs, true_counts, log_pred_counts, coords, \
-            input_grads, input_seqs = run_epoch(
+            input_grads, input_seqs, true_profs_trans, true_counts_trans = run_epoch(
                 data_loader, "eval", model, 0, return_data=True
         )
         _run.log_scalar(f"{trans_id}_aux_test_{prefix}_batch_losses", batch_losses)
@@ -711,9 +731,25 @@ def train_model(
         _run.log_scalar(f"{trans_id}_aux_test_{prefix}_count_corr_losses", count_losses)
 
         metrics = profile_performance.compute_performance_metrics(
-            true_profs, log_pred_profs, true_counts, log_pred_counts
+            true_profs, log_pred_profs, true_counts, log_pred_counts, \
+            savepath=metrics_savepath, counts=(true_counts, true_counts_trans), coords=coords
         )
-        profile_performance.log_performance_metrics(metrics, f"{trans_id}_aux_{prefix}",  _run)
+        if prefix == "summit_union":
+            metrics_savepath = os.path.join(output_dir, "metrics_aux.pickle")
+        else:
+            metrics_savepath = None
+
+        profile_performance.log_performance_metrics(
+            metrics, f"{trans_id}_aux_{prefix}", _run, savepath=metrics_savepath, counts=(true_counts, true_counts_trans)
+        )
+
+
+    if early_stopping:
+        val_epoch_loss_hist = []
+
+    best_val_epoch_loss = np.inf
+    best_model_state = None
+    best_model_epoch = None
 
     for epoch in range(num_epochs):
         if torch.cuda.is_available:
@@ -763,6 +799,7 @@ def train_model(
         if val_epoch_loss < best_val_epoch_loss:
             best_val_epoch_loss = val_epoch_loss
             best_model_state = model.state_dict()
+            best_model_epoch = epoch
 
         # If losses are both NaN, then stop
         if np.isnan(train_epoch_loss) and np.isnan(val_epoch_loss):
@@ -781,6 +818,8 @@ def train_model(
                 if best_delta < early_stop_min_delta:
                     break  # Not improving enough
 
+    _run.log_scalar(f"{trans_id}_best_epoch", best_model_epoch)
+
     # Compute evaluation metrics and log them
     # for data_loader, prefix in [
     #     (test_summit_loader, "summit"), # (test_peak_loader, "peak"),
@@ -792,7 +831,7 @@ def train_model(
         model.load_state_dict(best_model_state)
         batch_losses, corr_losses, att_losses, prof_losses, count_losses, \
             true_profs, log_pred_profs, true_counts, log_pred_counts, coords, \
-            input_grads, input_seqs = run_epoch(
+            input_grads, input_seqs, true_profs_trans, true_counts_trans = run_epoch(
                 data_loader, "eval", model, 0, return_data=True
         )
         _run.log_scalar(f"{trans_id}_test_{prefix}_batch_losses", batch_losses)
@@ -804,7 +843,16 @@ def train_model(
         metrics = profile_performance.compute_performance_metrics(
             true_profs, log_pred_profs, true_counts, log_pred_counts
         )
-        profile_performance.log_performance_metrics(metrics, f"{trans_id}_{prefix}",  _run)
+
+        if prefix == "summit_union":
+            metrics_savepath = os.path.join(output_dir, "metrics.pickle")
+        else:
+            metrics_savepath = None
+
+        profile_performance.log_performance_metrics(
+            metrics, f"{trans_id}_{prefix}", _run, \
+            savepath=metrics_savepath, counts=(true_counts, true_counts_trans), coords=coords
+        )
 
 
 @train_ex.command
@@ -865,6 +913,10 @@ def run_training(
         ),
         "test_summit_to_sig_from_sig": make_profile_transfer_dataset.create_data_loader(
             peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SummitCenteringCoordsBatcherToSigFromSig",
+            return_coords=True, revcomp=False, chrom_set=test_chroms
+        ),
+        "test_summit_union": make_profile_transfer_dataset.create_data_loader(
+            peak_beds, peak_beds_trans, profile_hdf5, profile_trans_hdf5, "SummitCenteringCoordsBatcherUnion",
             return_coords=True, revcomp=False, chrom_set=test_chroms
         ),
         # "test_summit_to_insig_from_insig": make_profile_transfer_dataset.create_data_loader(

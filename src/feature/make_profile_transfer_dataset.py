@@ -892,6 +892,14 @@ def create_data_loader(
             shuffle_before_epoch=shuffle, shuffle_seed=shuffle_seed,
             peaks_trans_thresh_type="insig"
         )
+    elif sampling_type == "SummitCenteringCoordsBatcherUnion":
+        # Yields batches of positive coordinates, centered at summits
+        coords_batcher = SummitCenteringCoordsBatcher(
+            peaks_bed_paths, peak_bed_trans_paths, batch_size, chrom_sizes_tsv, input_length,
+            chroms_keep=chrom_set, return_peaks=return_coords,
+            shuffle_before_epoch=shuffle, shuffle_seed=shuffle_seed,
+            peaks_trans_thresh_type="union"
+        )
     # elif sampling_type == "SummitCenteringCoordsBatcherToInsigFromInsig":
     #     # Yields batches of positive coordinates, centered at summits
     #     coords_batcher = SummitCenteringCoordsBatcher(

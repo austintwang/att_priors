@@ -3,6 +3,7 @@ import scipy.special
 import scipy.ndimage
 import sacred
 from datetime import datetime
+import pickle
 
 performance_ex = sacred.Experiment("performance")
 
@@ -647,13 +648,19 @@ def compute_performance_metrics(
 @performance_ex.capture
 def log_performance_metrics(
     metrics, prefix, _run, prof_count_corr_bin_sizes, auprc_bin_sizes,
-    print_log=True
+    print_log=True, savepath=None, counts=(None, None), coords=None
 ):
     """
     Given the metrics dictionary returned by `compute_performance_metrics`, logs
     them to a Sacred logging object (`_run`), and optionally prints out a log.
     When logging, `prefix` is prepended to each output key.
     """
+    if savepath is not None:
+        metrics["counts_to"], metrics["counts_from"] = counts
+        metrics["coords"] = coords
+        with open(savepath, "wb") as save_file:
+            pickle.dump(metrics, save_file)
+
     # Before logging, condense the metrics into averages over the samples (when
     # appropriate)
     nll = np.nanmean(metrics["nll"], axis=0)  # T
