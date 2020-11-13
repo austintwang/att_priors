@@ -12,8 +12,8 @@ import feature.make_profile_transfer_dataset as make_profile_transfer_dataset
 
 MODEL_DIR = os.environ.get(
     "MODEL_DIR",
-    # "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_test/", ####
-    "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_v3/"
+    "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_test/", ####
+    # "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_v4/"
 )
 
 train_ex = sacred.Experiment("train_transfer", ingredients=[
@@ -117,8 +117,8 @@ def config(dataset_transfer):
         # Number of training epochs
         "num_epochs": 20,
 
-        "num_epochs_prof": 20,
-        # "num_epochs_prof": 1, ####
+        # "num_epochs_prof": 20,
+        "num_epochs_prof": 1, ####
 
         # Learning rate
         "learning_rate": 0.001,
