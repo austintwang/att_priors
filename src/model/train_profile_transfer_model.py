@@ -115,7 +115,8 @@ def config(dataset_transfer):
         "fourier_att_prior_freq_limit_softness": 0.2,
 
         # Number of training epochs
-        "num_epochs": 20,
+        # "num_epochs": 20,
+        "num_epochs": 1, ####
 
         # "num_epochs_prof": 20,
         "num_epochs_prof": 1, ####
@@ -731,8 +732,7 @@ def train_model(
         _run.log_scalar(f"{trans_id}_aux_test_{prefix}_count_corr_losses", count_losses)
 
         metrics = profile_performance.compute_performance_metrics(
-            true_profs, log_pred_profs, true_counts, log_pred_counts, \
-            savepath=metrics_savepath, counts=(true_counts, true_counts_trans), coords=coords
+            true_profs, log_pred_profs, true_counts, log_pred_counts
         )
         if prefix == "summit_union":
             metrics_savepath = os.path.join(output_dir, "metrics_aux.pickle")
@@ -740,7 +740,8 @@ def train_model(
             metrics_savepath = None
 
         profile_performance.log_performance_metrics(
-            metrics, f"{trans_id}_aux_{prefix}", _run, savepath=metrics_savepath, counts=(true_counts, true_counts_trans)
+            metrics, f"{trans_id}_aux_{prefix}", _run, \
+            savepath=metrics_savepath, counts=(true_counts, true_counts_trans), coords=coords
         )
 
 
