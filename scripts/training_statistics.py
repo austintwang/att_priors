@@ -120,6 +120,52 @@ def fetch_and_print_performance(models_path, metric_prefix, out_dir, run_id, max
             print("\tRun %s, epoch %d: %6.4f" % (key[0], key[1], all_vals[key]), file=out_file)
     return best_run, best_epoch, all_vals
 
+def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_key, metric_name, metrics_genome_dict, metrics_nogenome_dict, plt_dir):
+    metrics_path = os.path.join(models_path, f"{prefix}_{query_run}", "metrics.pickle")
+    metrics_genome = metrics_genome_dict.setdefault(query_run, pd.read_pickle(metrics_path)) 
+    metrics_path_nogenome = os.path.join(models_path, f"{prefix}_{query_run}", "metrics_aux.pickle")
+    metrics_nogenome = metrics_nogenome_dict.setdefault(query_run, pd.read_pickle(metrics_path_nogenome))
+
+    name_genome = f"{metric_name} With Genome"
+    name_nogenome = f"{metric_name} Without Genome"
+    name_differential = f"{metric_name} Differential"
+
+    data_genome = metrics_genome[metric_key]
+    coords_genome = metrics_genome["coords"]
+    counts_to = metrics_genome["counts_to"]
+    counts_from = metrics_genome["counts_from"]
+    counts_diff = counts_to - counts_from
+    arr_genome = np.stack((coords_genome, counts_diff, data_genome), axis=1)
+    df_genome = pd.DataFrame(arr_genome, columns=["Coordinates", "Enrichment Differential", name_genome])
+
+    data_nogenome = metrics_nogenome[metric_key]
+    coords_nogenome = metrics_nogenome["coords"]
+    arr_nogenome = np.stack((coords_nogenome, data_nogenome))
+    df_nogenome = pd.DataFrame(arr_nogenome, columns=["Coordinates", metric_name])
+
+    df_merged = df_genome.merge(df_nogenome, on="Coordinates", suffixes=(None, " Without Genome"))
+    df_merged[name_differential] = df_merged[name_genome] - df_merged[name_nogenome]
+
+    sns.set(style="whitegrid", font="Roboto")
+
+    sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_genome)
+    plt.title(f"{name_genome} vs. Peak Specificity")
+    plt_path = os.path.join(plt_dir, f"individual_genome.svg")
+    plt.savefig(plt_path, bbox_inches='tight')
+    plt.clf()
+
+    sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_nogenome)
+    plt.title(f"{name_nogenome} vs. Peak Specificity")
+    plt_path = os.path.join(plt_dir, f"individual_nogenome.svg")
+    plt.savefig(plt_path, bbox_inches='tight')
+    plt.clf()
+
+    sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_diff)
+    plt.title(f"{name_diff} vs. Peak Specificity")
+    plt_path = os.path.join(plt_dir, f"individual_diff.svg")
+    plt.savefig(plt_path, bbox_inches='tight')
+    plt.clf()
+
 def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, out_dir, nogenome_query_run=None, genome_query_run=None):
     # if model_type == "binary":
     #     metric_keys = [
@@ -131,6 +177,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
     # else:
     # print(nogenome_query_run, genome_query_run) ####
     loaders = [
+        "summit_union",
         "summit_to_sig",
         "summit_from_sig",
         "summit_to_sig_from_sig",
@@ -143,20 +190,20 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
     metric_keys = []
     for i in loaders:
         metric_keys_spec = [
-            (i, "prof_nll", "test profile NLL", "greater", (0, 7000)),
-            (i, "prof_jsd", "test profile JSD", "greater", (0, 0.3)),
-            (i, "prof_spearman_bin1", "test profile Spearman r, bin size 1", "greater", (0, 1)),
-            (i, "prof_pearson_bin1", "test profile Pearson r, bin size 1", "greater", (0, 1)),
-            (i, "prof_mse_bin1", "test profile MSE, bin size 1", "greater", (0, 5.5e-5)),
-            (i, "prof_spearman_bin4", "test profile Spearman r, bin size 4", "greater", (0, 1)),
-            (i, "prof_pearson_bin4", "test profile Pearson r, bin size 4", "greater", (0, 1)),
-            (i, "prof_mse_bin4", "test profile MSE, bin size 4", "greater", (0, 5.5e-5)),
-            (i, "prof_spearman_bin10", "test profile Spearman r, bin size 10", "greater", (0, 1)),
-            (i, "prof_pearson_bin10", "test profile Pearson r, bin size 10", "greater", (0, 1)),
-            (i, "prof_mse_bin10", "test profile MSE, bin size 10", "greater", (0, 5.5e-5)),
-            (i, "count_spearman", "test count Spearman r, bin size 10", "greater", (0, 1)),
-            (i, "count_pearson", "test count Pearson r, bin size 10", "greater", (0, 1)),
-            (i, "count_mse", "test count MSE, bin size 10", "greater", (0, None))
+            (i, "prof_nll", "Test Profile NLL", "greater", (0, 7000), True),
+            (i, "prof_jsd", "Test Profile JSD", "greater", (0, 0.3), True),
+            (i, "prof_spearman_bin1", "Test Profile Spearman r, Bin 1", "greater", (0, 1), True),
+            (i, "prof_pearson_bin1", "Test Profile Pearson r, Bin 1", "greater", (0, 1), True),
+            (i, "prof_mse_bin1", "Test Profile MSE, Bin 1", "greater", (0, 5.5e-5), True),
+            (i, "prof_spearman_bin4", "Test Profile Spearman r, Bin 4", "greater", (0, 1), True),
+            (i, "prof_pearson_bin4", "Test Profile Pearson r, Bin 4", "greater", (0, 1), True),
+            (i, "prof_mse_bin4", "Test Profile MSE, Bin 4", "greater", (0, 5.5e-5), True),
+            (i, "prof_spearman_bin10", "Test Profile Spearman r, Bin 10", "greater", (0, 1), True),
+            (i, "prof_pearson_bin10", "Test Profile Pearson r, Bin 10", "greater", (0, 1), True),
+            (i, "prof_mse_bin10", "Test Profile MSE, Bin 10", "greater", (0, 5.5e-5), True),
+            (i, "count_spearman", "Test Count Spearman r, Bin 10", "greater", (0, 1), False),
+            (i, "count_pearson", "Test Count Pearson r, Bin 10", "greater", (0, 1), False),
+            (i, "count_mse", "Test Count MSE, Bin 10", "greater", (0, None), False)
         ]
         metric_keys.extend(metric_keys_spec)
     
@@ -165,9 +212,12 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
     model_metrics = {key : val for key, val in model_metrics.items() if val}  # Remove empties
     
     vals_to_return = []
+
+    metrics_genome_dict = {}
+    metrics_nogenome_dict = {}
     
     # print(out_dir) ####
-    for loader_name, metric_key, metric_name, test_alternative, bounds in metric_keys:
+    for loader_name, metric_key, metric_name, test_alternative, bounds, plot_individual in metric_keys:
         # print(out_dir) ####
         plt_dir = os.path.join(out_dir, metric_key)
         os.makedirs(plt_dir, exist_ok=True)
@@ -244,6 +294,9 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
         plt.title(title)
         plt.savefig(plt_path, bbox_inches='tight')
         plt.clf()
+
+        if loader_name == "summit_union" and plot_individual:
+            plot_metric_individual(models_path, genome_prefix, genome_query_run, loader_name, metric_key, metric_name, metrics_genome_dict, metrics_nogenome_dict, plt_dir)
 
         # print(nogenome_vals, genome_vals, test_alternative) ####
         try:
@@ -355,7 +408,7 @@ def plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir, peak_retent
     # plot_violin(test_metrics, nogenome_vals, genome_vals, peak_retention, out_dir)
 
 if __name__ == '__main__':
-    models_path = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_v2/"
+    models_path = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_v4/"
     out_dir_base = "/users/atwang/results/domain_adapt_results/dnase_models/"
     # models_path = "/users/atwang/transfer/models/trained_models/profile/misc/"
     peak_retention = "all"
