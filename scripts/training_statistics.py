@@ -155,7 +155,7 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     # print(counts_diff.shape) ####
     # print(data_genome.shape) ####
     arr_genome = np.stack((coords_genome, counts_diff, counts_sum, data_genome), axis=1)
-    df_genome = pd.DataFrame(arr_genome, columns=["Coordinates", "Enrichment Differential", "Log Total Counts", name_genome])
+    df_genome = pd.DataFrame(arr_genome, columns=["Coordinates", "Enrichment Differential", "Log10 Total Counts", name_genome])
 
     data_nogenome = metrics_nogenome[dict_key]
     if arr_idx is not None:
@@ -172,26 +172,26 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     sns.set(style="whitegrid", font="Roboto")
     plt.figure(figsize=(7,5))
 
-    sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_genome, hue="Log Total Counts")
+    sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_genome, hue="Log10 Total Counts")
     plt.title(f"{name_genome} vs. Peak Specificity")
     plt_path = os.path.join(plt_dir, f"individual_genome.svg")
     plt.savefig(plt_path, bbox_inches='tight')
     plt.clf()
 
-    sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_nogenome, hue="Log Total Counts")
+    sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_nogenome, hue="Log10 Total Counts")
     plt.title(f"{name_nogenome} vs. Peak Specificity")
     plt_path = os.path.join(plt_dir, f"individual_nogenome.svg")
     plt.savefig(plt_path, bbox_inches='tight')
     plt.clf()
 
-    sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_diff, hue="Log Total Counts")
+    sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_diff, hue="Log10 Total Counts")
     plt.title(f"{name_diff} vs. Peak Specificity")
     plt_path = os.path.join(plt_dir, f"individual_diff.svg")
     plt.savefig(plt_path, bbox_inches='tight')
     plt.clf()
 
     plt.figure(figsize=(6,6))
-    sns.scatterplot(data=df_merged, x=name_nogenome, y=name_genome, hue="Log Total Counts", s=3)
+    sns.jointplot(data=df_merged, x=name_nogenome, y=name_genome, hue="Log10 Total Counts", s=5, hue_norm=(1, 5))
     plt.gca().axline([0, 0], [1, 1])
     plt.title(f"{metric_name} Shift")
     plt_path = os.path.join(plt_dir, f"individual_comp.svg")
