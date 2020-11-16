@@ -144,7 +144,9 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     data_genome = data_genome[:,0]
     coords_genome = metrics_genome["coords"][:,1]
     counts_to = metrics_genome["counts_to"].sum(axis=-1)[:,0]
+    print(counts_to.sum()) ####
     counts_from = metrics_genome["counts_from"].sum(axis=-1)[:,0]
+    print(counts_from.sum()) ####
     counts_diff = np.log(counts_to + epsilon) - np.log(counts_from + epsilon) + offset
     # print(coords_genome.shape) ####
     # print(counts_diff.shape) ####
@@ -158,10 +160,10 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     data_nogenome = data_nogenome[:,0]
     coords_nogenome = metrics_nogenome["coords"][:,1]
     arr_nogenome = np.stack((coords_nogenome, data_nogenome), axis=1)
-    df_nogenome = pd.DataFrame(arr_nogenome, columns=["Coordinates", metric_name])
+    df_nogenome = pd.DataFrame(arr_nogenome, columns=["Coordinates", name_nogenome])
 
     df_merged = df_genome.merge(df_nogenome, on="Coordinates", suffixes=(None, " Without Genome"))
-    print(df_merged) ####
+    # print(df_merged) ####
     df_merged[name_differential] = df_merged[name_genome] - df_merged[name_nogenome]
 
     sns.set(style="whitegrid", font="Roboto")
