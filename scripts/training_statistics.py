@@ -130,6 +130,7 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     name_nogenome = f"{metric_name} Without Genome"
     name_differential = f"{metric_name} Differential"
 
+    print(metrics_genome.keys()) ####
     data_genome = metrics_genome[metric_key]
     coords_genome = metrics_genome["coords"]
     counts_to = metrics_genome["counts_to"]
