@@ -134,7 +134,7 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
 
     name_genome = f"{metric_name} With Genome"
     name_nogenome = f"{metric_name} Without Genome"
-    name_differential = f"{metric_name} Differential"
+    name_diff = f"{metric_name} Differential"
 
     # print(metrics_genome.keys()) ####
     dict_key, arr_idx = metric_key
@@ -144,9 +144,9 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     data_genome = data_genome[:,0]
     coords_genome = metrics_genome["coords"][:,1]
     counts_to = metrics_genome["counts_to"].sum(axis=-1)[:,0]
-    print((counts_to > 0).mean()) ####
+    # print((counts_to > 0).mean()) ####
     counts_from = metrics_genome["counts_from"].sum(axis=-1)[:,0]
-    print((counts_from > 0).mean()) ####
+    # print((counts_from > 0).mean()) ####
     counts_diff = np.log(counts_to + epsilon) - np.log(counts_from + epsilon) + offset
     # print(coords_genome.shape) ####
     # print(counts_diff.shape) ####
