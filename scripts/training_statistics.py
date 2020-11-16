@@ -147,12 +147,13 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     # print((counts_to > 0).mean()) ####
     counts_from = metrics_genome["counts_from"].sum(axis=-1)[:,0]
     # print((counts_from > 0).mean()) ####
+    counts_sum = counts_to + counts_from
     counts_diff = np.log(counts_to + epsilon) - np.log(counts_from + epsilon) + offset
     # print(coords_genome.shape) ####
     # print(counts_diff.shape) ####
     # print(data_genome.shape) ####
-    arr_genome = np.stack((coords_genome, counts_diff, data_genome), axis=1)
-    df_genome = pd.DataFrame(arr_genome, columns=["Coordinates", "Enrichment Differential", name_genome])
+    arr_genome = np.stack((coords_genome, counts_diff, counts_sum, data_genome), axis=1)
+    df_genome = pd.DataFrame(arr_genome, columns=["Coordinates", "Enrichment Differential", "Total Counts", name_genome])
 
     data_nogenome = metrics_nogenome[dict_key]
     if arr_idx is not None:
