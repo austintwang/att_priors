@@ -168,30 +168,35 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     df_merged[name_diff] = df_merged[name_genome] - df_merged[name_nogenome]
 
     sns.set(style="whitegrid", font="Roboto")
+    plt.figure(figsize=(6,4))
 
-    sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_genome)
+    ax.axline([0, 0], [1, 1])
+    sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_genome, hue="Total Counts")
     plt.title(f"{name_genome} vs. Peak Specificity")
     plt_path = os.path.join(plt_dir, f"individual_genome.svg")
     plt.savefig(plt_path, bbox_inches='tight')
     plt.clf()
 
-    sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_nogenome)
+    sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_nogenome, hue="Total Counts")
     plt.title(f"{name_nogenome} vs. Peak Specificity")
     plt_path = os.path.join(plt_dir, f"individual_nogenome.svg")
     plt.savefig(plt_path, bbox_inches='tight')
     plt.clf()
 
-    sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_diff)
+    sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_diff, hue="Total Counts")
     plt.title(f"{name_diff} vs. Peak Specificity")
     plt_path = os.path.join(plt_dir, f"individual_diff.svg")
     plt.savefig(plt_path, bbox_inches='tight')
     plt.clf()
 
-    sns.scatterplot(data=df_merged, x=name_nogenome, y=name_genome)
+    plt.figure(figsize=(5,5))
+    sns.scatterplot(data=df_merged, x=name_nogenome, y=name_genome, hue="Total Counts")
     plt.title(f"{metric_name} Shift")
     plt_path = os.path.join(plt_dir, f"individual_comp.svg")
     plt.savefig(plt_path, bbox_inches='tight')
     plt.clf()
+
+    plt.figure(figsize=(6,4))
 
 def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, out_dir, nogenome_query_run=None, genome_query_run=None):
     # if model_type == "binary":
