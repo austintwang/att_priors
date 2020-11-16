@@ -157,7 +157,7 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
         data_nogenome = data_nogenome[:,:,arr_idx]
     data_nogenome = data_nogenome[:,0]
     coords_nogenome = metrics_nogenome["coords"][:,1]
-    arr_nogenome = np.stack((coords_nogenome, data_nogenome))
+    arr_nogenome = np.stack((coords_nogenome, data_nogenome), axis=1)
     df_nogenome = pd.DataFrame(arr_nogenome, columns=["Coordinates", metric_name])
 
     df_merged = df_genome.merge(df_nogenome, on="Coordinates", suffixes=(None, " Without Genome"))
