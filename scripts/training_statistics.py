@@ -170,7 +170,7 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     sns.set(style="whitegrid", font="Roboto")
     plt.figure(figsize=(6,4))
 
-    ax.axline([0, 0], [1, 1])
+    plt.gca().axline([0, 0], [1, 1])
     sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_genome, hue="Total Counts")
     plt.title(f"{name_genome} vs. Peak Specificity")
     plt_path = os.path.join(plt_dir, f"individual_genome.svg")
