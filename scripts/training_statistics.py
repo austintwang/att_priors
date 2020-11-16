@@ -136,9 +136,9 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     if arr_idx is not None:
         data_genome = data_genome[:,:,arr_idx]
     data_genome = data_genome[:,0]
-    coords_genome = metrics_genome["coords"]
-    counts_to = metrics_genome["counts_to"]
-    counts_from = metrics_genome["counts_from"]
+    coords_genome = metrics_genome["coords"][:,1]
+    counts_to = metrics_genome["counts_to"].sum(axis=-1)[:,0]
+    counts_from = metrics_genome["counts_from"].sum(axis=-1)[:,0]
     counts_diff = counts_to - counts_from
     print(coords_genome.shape) ####
     print(counts_diff.shape) ####
