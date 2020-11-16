@@ -121,6 +121,12 @@ def fetch_and_print_performance(models_path, metric_prefix, out_dir, run_id, max
     return best_run, best_epoch, all_vals
 
 def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_key, metric_name, metrics_genome_dict, metrics_nogenome_dict, plt_dir):
+    epsilon = 1e-5
+    if genome_prefix == "K562_from_HepG2":
+        offset = np.log(1400599316) - np.log(1728009533)
+    elif genome_prefix == "HepG2_from_K562":
+        offset = np.log(1728009533) - np.log(1400599316)
+
     metrics_path = os.path.join(models_path, f"{prefix}_{query_run}", "metrics.pickle")
     metrics_genome = metrics_genome_dict.setdefault(query_run, pd.read_pickle(metrics_path)) 
     metrics_path_nogenome = os.path.join(models_path, f"{prefix}_{query_run}", "metrics_aux.pickle")
@@ -139,10 +145,10 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     coords_genome = metrics_genome["coords"][:,1]
     counts_to = metrics_genome["counts_to"].sum(axis=-1)[:,0]
     counts_from = metrics_genome["counts_from"].sum(axis=-1)[:,0]
-    counts_diff = counts_to - counts_from
-    print(coords_genome.shape) ####
-    print(counts_diff.shape) ####
-    print(data_genome.shape) ####
+    counts_diff = np.log(counts_to + epsilon) - np.log(counts_from + epsilon) + offset
+    # print(coords_genome.shape) ####
+    # print(counts_diff.shape) ####
+    # print(data_genome.shape) ####
     arr_genome = np.stack((coords_genome, counts_diff, data_genome), axis=1)
     df_genome = pd.DataFrame(arr_genome, columns=["Coordinates", "Enrichment Differential", name_genome])
 
