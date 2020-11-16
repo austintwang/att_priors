@@ -13,7 +13,7 @@ import feature.make_profile_transfer_dataset as make_profile_transfer_dataset
 MODEL_DIR = os.environ.get(
     "MODEL_DIR",
     # "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_test/", ####
-    "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_v4/"
+    "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_v5/"
 )
 
 train_ex = sacred.Experiment("train_transfer", ingredients=[
@@ -564,8 +564,8 @@ def run_epoch(
         all_log_pred_counts = all_log_pred_counts[:num_samples_seen]
         all_true_profs = all_true_profs[:num_samples_seen]
         all_true_counts = all_true_counts[:num_samples_seen]
-        all_true_profs_trans = all_true_profs[:num_samples_seen]
-        all_true_counts_trans = all_true_counts[:num_samples_seen]
+        all_true_profs_trans = all_true_profs_trans[:num_samples_seen]
+        all_true_counts_trans = all_true_counts_trans[:num_samples_seen]
         all_input_seqs = all_input_seqs[:num_samples_seen]
         all_input_grads = all_input_grads[:num_samples_seen]
         all_coords = all_coords[:num_samples_seen]
