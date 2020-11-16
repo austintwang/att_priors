@@ -164,7 +164,7 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
 
     df_merged = df_genome.merge(df_nogenome, on="Coordinates", suffixes=(None, " Without Genome"))
     # print(df_merged) ####
-    df_merged[name_differential] = df_merged[name_genome] - df_merged[name_nogenome]
+    df_merged[name_diff] = df_merged[name_genome] - df_merged[name_nogenome]
 
     sns.set(style="whitegrid", font="Roboto")
 
