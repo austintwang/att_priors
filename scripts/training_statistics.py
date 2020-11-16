@@ -149,7 +149,7 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     # print((counts_from > 0).mean()) ####
     counts_sum = np.log10(counts_to + counts_from + 1)
     # print(np.sort(counts_sum)[::-1][:1000]) ####
-    print(np.quantile(counts_sum, np.linspace(0, 1, num=11))) ####
+    # print(np.quantile(counts_sum, np.linspace(0, 1, num=11))) ####
     counts_diff = np.log(counts_to + epsilon) - np.log(counts_from + epsilon) + offset
     # print(coords_genome.shape) ####
     # print(counts_diff.shape) ####
@@ -173,7 +173,6 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     plt.figure(figsize=(7,5))
 
     sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_genome, hue="Log Total Counts")
-    plt.gca().axline([0, 0], [1, 1])
     plt.title(f"{name_genome} vs. Peak Specificity")
     plt_path = os.path.join(plt_dir, f"individual_genome.svg")
     plt.savefig(plt_path, bbox_inches='tight')
@@ -192,7 +191,8 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     plt.clf()
 
     plt.figure(figsize=(6,6))
-    sns.scatterplot(data=df_merged, x=name_nogenome, y=name_genome, hue="Log Total Counts")
+    sns.scatterplot(data=df_merged, x=name_nogenome, y=name_genome, hue="Log Total Counts", s=3)
+    plt.gca().axline([0, 0], [1, 1])
     plt.title(f"{metric_name} Shift")
     plt_path = os.path.join(plt_dir, f"individual_comp.svg")
     plt.savefig(plt_path, bbox_inches='tight')
