@@ -187,6 +187,12 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     plt.savefig(plt_path, bbox_inches='tight')
     plt.clf()
 
+    sns.scatterplot(data=df_merged, x=name_nogenome, y=name_genome)
+    plt.title(f"{metric_name} Shift")
+    plt_path = os.path.join(plt_dir, f"individual_comp.svg")
+    plt.savefig(plt_path, bbox_inches='tight')
+    plt.clf()
+
 def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, out_dir, nogenome_query_run=None, genome_query_run=None):
     # if model_type == "binary":
     #     metric_keys = [
