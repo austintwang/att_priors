@@ -148,7 +148,7 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     counts_from = metrics_genome["counts_from"].sum(axis=-1)[:,0]
     # print((counts_from > 0).mean()) ####
     counts_sum = counts_to + counts_from
-    print(np.sort(counts_sum[::-1])) ####
+    print(np.sort(counts_sum)[::-1]) ####
     counts_diff = np.log(counts_to + epsilon) - np.log(counts_from + epsilon) + offset
     # print(coords_genome.shape) ####
     # print(counts_diff.shape) ####
