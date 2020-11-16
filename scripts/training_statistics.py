@@ -191,10 +191,17 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     plt.clf()
 
     plt.figure(figsize=(6,6))
-    sns.jointplot(data=df_merged, x=name_nogenome, y=name_genome, hue="Log10 Total Counts", s=5, hue_norm=(1, 5))
+    sns.scatterplot(data=df_merged, x=name_nogenome, y=name_genome, hue="Log10 Total Counts", s=5, hue_norm=(1, 5))
     plt.gca().axline([0, 0], [1, 1])
     plt.title(f"{metric_name} Shift")
     plt_path = os.path.join(plt_dir, f"individual_comp.svg")
+    plt.savefig(plt_path, bbox_inches='tight')
+    plt.clf()
+
+    sns.scatterplot(data=df_merged, x=name_nogenome, y=name_genome, kind="kde")
+    plt.gca().axline([0, 0], [1, 1])
+    plt.title(f"{metric_name} Shift")
+    plt_path = os.path.join(plt_dir, f"individual_density.svg")
     plt.savefig(plt_path, bbox_inches='tight')
     plt.clf()
 
