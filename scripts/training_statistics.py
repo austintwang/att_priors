@@ -304,7 +304,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
         plt.clf()
 
         if loader_name == "summit_union" and plot_individual:
-            plot_metric_individual(models_path, genome_prefix, genome_query_run, loader_name, metric_key, metric_name, metrics_genome_dict, metrics_nogenome_dict, plt_dir)
+            plot_metric_individual(models_path, genome_prefix, genome_query_run, loader_name, ind_key, metric_name, metrics_genome_dict, metrics_nogenome_dict, plt_dir)
 
         # print(nogenome_vals, genome_vals, test_alternative) ####
         try:
