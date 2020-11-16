@@ -130,8 +130,12 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     name_nogenome = f"{metric_name} Without Genome"
     name_differential = f"{metric_name} Differential"
 
-    print(metrics_genome.keys()) ####
-    data_genome = metrics_genome[metric_key]
+    # print(metrics_genome.keys()) ####
+    dict_key, arr_idx = metric_key
+    data_genome = metrics_genome[dict_key]
+    if arr_idx is not None:
+        data_genome = data_genome[:,:,arr_idx]
+    data_genome = data_genome[:,0]
     coords_genome = metrics_genome["coords"]
     counts_to = metrics_genome["counts_to"]
     counts_from = metrics_genome["counts_from"]
@@ -139,7 +143,10 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     arr_genome = np.stack((coords_genome, counts_diff, data_genome), axis=1)
     df_genome = pd.DataFrame(arr_genome, columns=["Coordinates", "Enrichment Differential", name_genome])
 
-    data_nogenome = metrics_nogenome[metric_key]
+    data_nogenome = metrics_nogenome[dict_key]
+    if arr_idx is not None:
+        data_nogenome = data_nogenome[:,:,arr_idx]
+    data_nogenome = data_nogenome[:,0]
     coords_nogenome = metrics_nogenome["coords"]
     arr_nogenome = np.stack((coords_nogenome, data_nogenome))
     df_nogenome = pd.DataFrame(arr_nogenome, columns=["Coordinates", metric_name])
@@ -191,20 +198,20 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
     metric_keys = []
     for i in loaders:
         metric_keys_spec = [
-            (i, "prof_nll", "Test Profile NLL", "greater", (0, 7000), True),
-            (i, "prof_jsd", "Test Profile JSD", "greater", (0, 0.3), True),
-            (i, "prof_spearman_bin1", "Test Profile Spearman r, Bin 1", "greater", (0, 1), True),
-            (i, "prof_pearson_bin1", "Test Profile Pearson r, Bin 1", "greater", (0, 1), True),
-            (i, "prof_mse_bin1", "Test Profile MSE, Bin 1", "greater", (0, 5.5e-5), True),
-            (i, "prof_spearman_bin4", "Test Profile Spearman r, Bin 4", "greater", (0, 1), True),
-            (i, "prof_pearson_bin4", "Test Profile Pearson r, Bin 4", "greater", (0, 1), True),
-            (i, "prof_mse_bin4", "Test Profile MSE, Bin 4", "greater", (0, 5.5e-5), True),
-            (i, "prof_spearman_bin10", "Test Profile Spearman r, Bin 10", "greater", (0, 1), True),
-            (i, "prof_pearson_bin10", "Test Profile Pearson r, Bin 10", "greater", (0, 1), True),
-            (i, "prof_mse_bin10", "Test Profile MSE, Bin 10", "greater", (0, 5.5e-5), True),
-            (i, "count_spearman", "Test Count Spearman r, Bin 10", "greater", (0, 1), False),
-            (i, "count_pearson", "Test Count Pearson r, Bin 10", "greater", (0, 1), False),
-            (i, "count_mse", "Test Count MSE, Bin 10", "greater", (0, None), False)
+            (i, "prof_nll", "Test Profile NLL", "greater", (0, 7000), True, ("nll", None)),
+            (i, "prof_jsd", "Test Profile JSD", "greater", (0, 0.3), True, ("jsd", None)),
+            (i, "prof_spearman_bin1", "Test Profile Spearman r, Bin 1", "greater", (0, 1), True, ("spearman_binned", 0)),
+            (i, "prof_pearson_bin1", "Test Profile Pearson r, Bin 1", "greater", (0, 1), True, ("pearson_binned", 0)),
+            (i, "prof_mse_bin1", "Test Profile MSE, Bin 1", "greater", (0, 5.5e-5), True, ("mse_binned", 0)),
+            (i, "prof_spearman_bin4", "Test Profile Spearman r, Bin 4", "greater", (0, 1), True, ("spearman_binned", 1)),
+            (i, "prof_pearson_bin4", "Test Profile Pearson r, Bin 4", "greater", (0, 1), True, ("pearson_binned", 1)),
+            (i, "prof_mse_bin4", "Test Profile MSE, Bin 4", "greater", (0, 5.5e-5), True, ("mse_binned", 1)),
+            (i, "prof_spearman_bin10", "Test Profile Spearman r, Bin 10", "greater", (0, 1), True, ("spearman_binned", 2)),
+            (i, "prof_pearson_bin10", "Test Profile Pearson r, Bin 10", "greater", (0, 1), True, ("pearson_binned", 2)),
+            (i, "prof_mse_bin10", "Test Profile MSE, Bin 10", "greater", (0, 5.5e-5), True, ("mse_binned", 2)),
+            (i, "count_spearman", "Test Count Spearman r, Bin 10", "greater", (0, 1), False, None),
+            (i, "count_pearson", "Test Count Pearson r, Bin 10", "greater", (0, 1), False, None),
+            (i, "count_mse", "Test Count MSE, Bin 10", "greater", (0, None), False, None)
         ]
         metric_keys.extend(metric_keys_spec)
     
@@ -218,7 +225,7 @@ def plot_test_metric_distributions(models_path, genome_prefix, nogenome_prefix, 
     metrics_nogenome_dict = {}
     
     # print(out_dir) ####
-    for loader_name, metric_key, metric_name, test_alternative, bounds, plot_individual in metric_keys:
+    for loader_name, metric_key, metric_name, test_alternative, bounds, plot_individual, ind_key in metric_keys:
         # print(out_dir) ####
         plt_dir = os.path.join(out_dir, metric_key)
         os.makedirs(plt_dir, exist_ok=True)
