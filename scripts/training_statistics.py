@@ -147,7 +147,7 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     # print((counts_to > 0).mean()) ####
     counts_from = metrics_genome["counts_from"].sum(axis=-1)[:,0]
     # print((counts_from > 0).mean()) ####
-    counts_sum = np.log10(counts_to + counts_from + 1)
+    counts_sum = np.log(counts_to + epsilon) + np.log(counts_from + epsilon)
     # print(np.sort(counts_sum)[::-1][:1000]) ####
     # print(np.quantile(counts_sum, np.linspace(0, 1, num=11))) ####
     counts_diff = np.log(counts_to + epsilon) - np.log(counts_from + epsilon) + offset
@@ -155,7 +155,7 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     # print(counts_diff.shape) ####
     # print(data_genome.shape) ####
     arr_genome = np.stack((coords_genome, counts_diff, counts_sum, data_genome), axis=1)
-    df_genome = pd.DataFrame(arr_genome, columns=["Coordinates", "Enrichment Differential", "Log10 Total Counts", name_genome])
+    df_genome = pd.DataFrame(arr_genome, columns=["Coordinates", "Enrichment Difference", "Enrichment Sum", name_genome])
 
     data_nogenome = metrics_nogenome[dict_key]
     if arr_idx is not None:
@@ -173,26 +173,29 @@ def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_k
     sns.set(style="whitegrid", font="Roboto")
     plt.figure(figsize=(7,5))
 
-    sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_genome, hue="Log10 Total Counts", s=6, hue_norm=(1, 5))
+    sns.scatterplot(data=df_merged, x="Enrichment Difference", y=name_genome, hue="Enrichment Sum", s=6)
     plt.title(f"{name_genome} vs. Peak Specificity")
     plt_path = os.path.join(plt_dir, f"individual_genome.svg")
+    plt.xlim((-7, 7),)
     plt.savefig(plt_path, bbox_inches='tight')
     plt.clf()
 
-    sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_nogenome, hue="Log10 Total Counts", s=6, hue_norm=(1, 5))
+    sns.scatterplot(data=df_merged, x="Enrichment Difference", y=name_nogenome, hue="Enrichment Sum", s=6)
     plt.title(f"{name_nogenome} vs. Peak Specificity")
     plt_path = os.path.join(plt_dir, f"individual_nogenome.svg")
+    plt.xlim((-7, 7),)
     plt.savefig(plt_path, bbox_inches='tight')
     plt.clf()
 
-    sns.scatterplot(data=df_merged, x="Enrichment Differential", y=name_diff, hue="Log10 Total Counts", s=6, hue_norm=(1, 5))
+    sns.scatterplot(data=df_merged, x="Enrichment Difference", y=name_diff, hue="Enrichment Sum", s=6)
     plt.title(f"{name_diff} vs. Peak Specificity")
     plt_path = os.path.join(plt_dir, f"individual_diff.svg")
+    plt.xlim((-7, 7),)
     plt.savefig(plt_path, bbox_inches='tight')
     plt.clf()
 
     plt.figure(figsize=(6,6))
-    sns.scatterplot(data=df_merged, x=name_nogenome, y=name_genome, hue="Log10 Total Counts", s=6, hue_norm=(1, 5))
+    sns.scatterplot(data=df_merged, x=name_nogenome, y=name_genome, hue="Enrichment Sum", s=6)
     plt.gca().axline([0, 0], [1, 1])
     plt.title(f"{metric_name} Shift")
     plt_path = os.path.join(plt_dir, f"individual_comp.svg")
