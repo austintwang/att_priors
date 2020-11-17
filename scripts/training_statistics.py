@@ -450,7 +450,7 @@ def plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir, peak_retent
     # plot_violin(test_metrics, nogenome_vals, genome_vals, peak_retention, out_dir)
 
 if __name__ == '__main__':
-    models_path = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_v4/"
+    models_path = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_v5/"
     out_dir_base = "/users/atwang/results/domain_adapt_results/dnase_models/"
     # models_path = "/users/atwang/transfer/models/trained_models/profile/misc/"
     peak_retention = "all"
