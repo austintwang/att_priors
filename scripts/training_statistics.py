@@ -445,6 +445,8 @@ def write_loss_stats(nogenome_vals, genome_vals, out_dir):
 def plot_stats(models_path, genome_prefix, nogenome_prefix, out_dir, peak_retention):
     nogenome_best_run, nogenome_best_epoch, nogenome_val_losses = fetch_and_print_performance(models_path, nogenome_prefix, out_dir, "nogenome")
     genome_best_run, genome_best_epoch, genome_val_losses = fetch_and_print_performance(models_path, nogenome_prefix, out_dir, "genome")
+    nogenome_best_run = 1 ####
+    genome_best_run = 1 ####
     nogenome_vals, genome_vals = np.array(list(nogenome_val_losses.values())), np.array(list(genome_val_losses.values()))
     plot_loss_hist(nogenome_vals, genome_vals, peak_retention, out_dir)
     write_loss_stats(nogenome_vals, genome_vals, out_dir)
