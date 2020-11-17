@@ -121,7 +121,7 @@ def fetch_and_print_performance(models_path, metric_prefix, out_dir, run_id, max
     return best_run, best_epoch, all_vals
 
 def plot_metric_individual(models_path, prefix, query_run, loader_name, metric_key, metric_name, metrics_genome_dict, metrics_nogenome_dict, plt_dir):
-    epsilon = 1e-5
+    epsilon = 1.
     if genome_prefix == "K562_from_HepG2":
         offset = np.log(1400599316) - np.log(1728009533)
     elif genome_prefix == "HepG2_from_K562":
