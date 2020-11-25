@@ -714,9 +714,9 @@ class ProfilePredictorWithControlsKwargs(ProfilePredictorWithControls):
 class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.prof_trans_conv_kernel_size = kwargs["prof_trans_conv_kernel_size"]
-        self.prof_trans_conv_channels = kwargs["prof_trans_conv_channels"]
-        self.prof_conv_kernel_size = kwargs["prof_conv_kernel_size"]
+        self.prof_trans_conv_kernel_size = self.creation_args["prof_trans_conv_kernel_size"] = kwargs["prof_trans_conv_kernel_size"]
+        self.prof_trans_conv_channels = self.creation_args["prof_trans_conv_channels"] = kwargs["prof_trans_conv_channels"]
+        # self.prof_conv_kernel_size = kwargs["prof_conv_kernel_size"]
 
         self.seq_params = [(name, param) for name, param in self.named_parameters()]
 
