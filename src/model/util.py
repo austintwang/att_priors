@@ -63,6 +63,7 @@ def restore_model(model_class, load_path):
     load_dict = torch.load(load_path)
     model_state = load_dict["model_state"]
     model_creation_args = load_dict["model_creation_args"]
+    print(model_creation_args) ####
     model = model_class(**model_creation_args)
     model.load_state_dict(model_state)
     return model
