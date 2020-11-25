@@ -1,4 +1,4 @@
-from model.util import place_tensor
+from model.util import place_tensor_util
 import model.profile_models as profile_models
 import model.binary_models as binary_models
 from extract.dinuc_shuffle import dinuc_shuffle
@@ -9,7 +9,7 @@ import os
 import sys
 
 GPU = "4"
-place_tensor = lambda x: place_tensor(x, index=GPU)
+place_tensor = lambda x: place_tensor_util(x, index=GPU)
 
 DEVNULL = open(os.devnull, "w")
 STDOUT = sys.stdout
