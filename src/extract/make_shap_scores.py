@@ -235,7 +235,6 @@ if __name__ == "__main__":
     model_type = "prof_trans"
     num_tasks = 1
     task_index = None
-    chrom_set = None
     input_length = 2114
     reference_fasta = "/users/amtseng/genomes/hg38.fasta"
     chrom_sizes = "/users/amtseng/genomes/hg38.canon.chrom.sizes"
@@ -284,5 +283,5 @@ if __name__ == "__main__":
             main(
                 model_path, model_type, files_spec_path, num_tasks, task_index, out_path,
                 chrom_set, input_length, reference_fasta, chrom_sizes, profile_length,
-                controls, num_strands, batch_size, chrom_set=chrom_set, model_args_extras=extras
+                controls, num_strands, batch_size, model_args_extras=extras
             )
