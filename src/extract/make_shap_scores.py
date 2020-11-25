@@ -265,7 +265,7 @@ if __name__ == "__main__":
             model_path = os.path.join(models_dir, f"{i}_from_{j}_{run_id}", f"model_ckpt_epoch_{best_epoch}.pt")
 
             files_spec_path = {
-                "profile_hdf5": os.path.join(hdf5_dir, f"{i}/{i}_profiles.h5")
+                "profile_hdf5": os.path.join(hdf5_dir, f"{i}/{i}_profiles.h5"),
                 "profile_trans_hdf5": os.path.join(hdf5_dir, f"{j}/{j}_profiles.h5")
             }
             out_path = os.path.join(out_dir, f"{i}_from_{j}")
