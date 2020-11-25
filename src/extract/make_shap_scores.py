@@ -243,6 +243,7 @@ if __name__ == "__main__":
     controls = "matched"
     num_strands = 1
     batch_size = 128
+    chrom_set = [f"chr{i}" for i in range(1, 23)] + ["chrX"]
 
     models_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_v5/"
     hdf5_dir = "/mnt/lab_data2/atwang/att_priors/data/processed/ENCODE_DNase/profile/labels"
@@ -283,5 +284,5 @@ if __name__ == "__main__":
             main(
                 model_path, model_type, files_spec_path, num_tasks, task_index, out_path,
                 chrom_set, input_length, reference_fasta, chrom_sizes, profile_length,
-                controls, num_strands, batch_size, model_args_extras=extras
+                controls, num_strands, batch_size, chrom_set=chrom_set, model_args_extras=extras
             )
