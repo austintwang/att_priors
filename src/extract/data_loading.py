@@ -131,8 +131,11 @@ def get_positive_profile_coords(files_spec_path, task_ind=None, chrom_set=None):
             only
     Returns an N x 3 array of coordinates.
     """
-    with open(files_spec_path, "r") as f:
-        files_spec = json.load(f)
+    if isinstance(files_spec_path, str):
+        with open(files_spec_path, "r") as f:
+            files_spec = json.load(f)
+    else:
+        files_spec = files_spec_path
 
     peaks = []
     peaks_beds = files_spec["peak_beds"][task_ind] if task_ind is not None \
