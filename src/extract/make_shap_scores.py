@@ -54,6 +54,8 @@ def make_shap_scores(
     # Determine the model class and import the model
     if model_type == "binary":
         model_class = binary_models.BinaryPredictor
+    elif model_type == "prof_trans":
+        model_class = profile_models.ProfilePredictorTransfer
     elif controls == "matched":
         model_class = profile_models.ProfilePredictorWithMatchedControls
     elif controls == "shared":
@@ -72,6 +74,13 @@ def make_shap_scores(
            files_spec_path, input_length, reference_fasta
         )
         pos_samples = data_loading.get_positive_binary_bins(
+            files_spec_path, chrom_set=chrom_set
+        )
+    elif model_type == "prof_trans":
+        input_func = data_loading.get_profile_trans_input_func(
+            files_spec_path, input_length, profile_length, reference_fasta,
+        )
+        pos_samples = data_loading.get_positive_profile_coords(
             files_spec_path, chrom_set=chrom_set
         )
     else:
@@ -98,6 +107,11 @@ def make_shap_scores(
         explainer = compute_shap.create_binary_explainer(
             model, input_length, task_index=task_index
         )
+    elif model_type == "prof_trans":
+        explainer = compute_shap.create_profile_transfer_explainer(
+            model, input_length, profile_length, num_tasks, num_strands,
+            controls, task_index=task_index
+        )
     else:
         explainer = compute_shap.create_profile_explainer(
             model, input_length, profile_length, num_tasks, num_strands,
@@ -111,6 +125,12 @@ def make_shap_scores(
         if model_type == "binary":
             input_seqs, _, coords = input_func(pos_samples[batch_slice])
             scores = explainer(input_seqs, hide_shap_output=True)
+        elif model_type == "prof_trans":
+            coords = pos_samples[batch_slice]
+            input_seqs, prof_trans, profiles = input_func(coords)
+            scores = explainer(
+                input_seqs, prof_trans[:, :num_tasks], profiles[:, num_tasks:], hide_shap_output=True
+            ) 
         else:
             coords = pos_samples[batch_slice]
             input_seqs, profiles = input_func(coords)
@@ -138,54 +158,54 @@ def make_shap_scores(
         model.attrs["model"] = model_path
 
 
-@click.command()
-@click.argument("model_path")
-@click.argument(
-    "model_type", type=click.Choice(["profile", "binary"])
-)
-@click.argument("files_spec_path")
-@click.option(
-    "--num-tasks", "-n", required=True, type=int,
-    help="Number of tasks in model"
-)
-@click.option(
-    "--task-index", "-i", default=None, type=int,
-    help="Index of task to explain; defaults to all in aggregate"
-)
-@click.option(
-    "--out-path", "-o", required=True, help="Path to output HDF5"
-)
-@click.option(
-    "--chrom-set", "-c", default=None,
-    help="Comma-separated list of chromosomes to compute scores for; defaults to all chromosomes"
-)
-@click.option(
-    "--input-length", "-il", default=None,
-    help="Length of input sequence; defaults to 1000 for binary and 1346 for profile models"
-)
-@click.option(
-    "--reference-fasta", "-f", default="/users/amtseng/genomes/hg38.fasta",
-    help="Path to reference FASTA"
-)
-@click.option(
-    "--chrom-sizes", "-s",
-    default="/users/amtseng/genomes/hg38.canon.chrom.sizes",
-    help="Path to chromosome sizes"
-)
-@click.option(
-    "--profile-length", "-pl", default=1000,
-    help="For profile models, the length of output profiles"
-)
-@click.option(
-    "--controls", "-co", default=None,
-    help="Type of controls for profile models; can be None (default), 'matched', or 'shared'"
-)
-@click.option(
-    "--num-strands", "-d", default=2, help="Number of strands in profile model"
-)
-@click.option(
-    "--batch-size", "-b", default=128, help="Batch size for computation"
-)
+# @click.command()
+# @click.argument("model_path")
+# @click.argument(
+#     "model_type", type=click.Choice(["profile", "binary", "prof_trans"])
+# )
+# @click.argument("files_spec_path")
+# @click.option(
+#     "--num-tasks", "-n", required=True, type=int,
+#     help="Number of tasks in model"
+# )
+# @click.option(
+#     "--task-index", "-i", default=None, type=int,
+#     help="Index of task to explain; defaults to all in aggregate"
+# )
+# @click.option(
+#     "--out-path", "-o", required=True, help="Path to output HDF5"
+# )
+# @click.option(
+#     "--chrom-set", "-c", default=None,
+#     help="Comma-separated list of chromosomes to compute scores for; defaults to all chromosomes"
+# )
+# @click.option(
+#     "--input-length", "-il", default=None,
+#     help="Length of input sequence; defaults to 1000 for binary and 1346 for profile models"
+# )
+# @click.option(
+#     "--reference-fasta", "-f", default="/users/amtseng/genomes/hg38.fasta",
+#     help="Path to reference FASTA"
+# )
+# @click.option(
+#     "--chrom-sizes", "-s",
+#     default="/users/amtseng/genomes/hg38.canon.chrom.sizes",
+#     help="Path to chromosome sizes"
+# )
+# @click.option(
+#     "--profile-length", "-pl", default=1000,
+#     help="For profile models, the length of output profiles"
+# )
+# @click.option(
+#     "--controls", "-co", default=None,
+#     help="Type of controls for profile models; can be None (default), 'matched', or 'shared'"
+# )
+# @click.option(
+#     "--num-strands", "-d", default=2, help="Number of strands in profile model"
+# )
+# @click.option(
+#     "--batch-size", "-b", default=128, help="Batch size for computation"
+# )
 def main(
     model_path, model_type, files_spec_path, num_tasks, task_index, out_path,
     chrom_set, input_length, reference_fasta, chrom_sizes, profile_length,
@@ -207,4 +227,51 @@ def main(
     )
 
 if __name__ == "__main__":
-    main()
+    # main()
+
+    model_type = "prof_trans"
+    num_tasks = 1
+    task_index = None
+    chrom_set = None
+    input_length = 2114
+    reference_fasta = "/users/amtseng/genomes/hg38.fasta"
+    chrom_sizes = "/users/amtseng/genomes/hg38.canon.chrom.sizes"
+    profile_length = 1000
+    controls = "matched"
+    num_strands = 1
+    batch_size = 128
+
+    models_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_v5/"
+    hdf5_dir = "/mnt/lab_data2/atwang/att_priors/data/processed/ENCODE_DNase/profile/labels"
+    out_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/deepshap/transfer_v5/"
+
+    cell_types = {
+        "K562": ["ENCSR000EOT"],
+        "HepG2": ["ENCSR149XIL"]
+    }
+
+    run_id = "1"
+
+    for i, i_ex in cell_types.items():
+        for j, j_ex in cell_types.items():
+            if i == j:
+                continue
+
+            metrics_path = os.path.join(models_dir, run_id, "metrics.json")
+            with open(metrics_path, "r") as f:
+                metrics = json.load(f)
+
+            best_epoch = metrics[f"{i}_from_{j}_best_epoch"]["values"][0]
+            model_path = os.path.join(models_dir, f"{i}_from_{j}_{run_id}", f"model_ckpt_epoch_{best_epoch}.pt")
+
+            files_spec_path = {
+                "profile_hdf5": os.path.join(hdf5_dir, f"{i}/{i}_profiles.h5")
+                "profile_trans_hdf5": os.path.join(hdf5_dir, f"{j}/{j}_profiles.h5")
+            }
+            out_path = os.path.join(out_dir, f"{i}_from_{j}")
+
+            main(
+                model_path, model_type, files_spec_path, num_tasks, task_index, out_path,
+                chrom_set, input_length, reference_fasta, chrom_sizes, profile_length,
+                controls, num_strands, batch_size
+            )

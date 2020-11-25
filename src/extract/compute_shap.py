@@ -8,6 +8,9 @@ import numpy as np
 import os
 import sys
 
+GPU = "4"
+place_tensor = lambda x: place_tensor(x, index=GPU)
+
 DEVNULL = open(os.devnull, "w")
 STDOUT = sys.stdout
 
@@ -79,6 +82,37 @@ def create_profile_control_background(
 
     # Replicate `control_profs`
     return torch.stack([control_profs] * bg_size, dim=0)
+
+def create_profile_transfer_background(
+    profs_trans, profile_length, num_tasks, num_strands, bg_size=10
+):
+    """
+    Generates a background for a set of profile controls. In general, this is
+    the given control profiles, copied a number of times (i.e. the background
+    for controls should always be the same). Note this is only used for profile
+    models.
+    Arguments:
+        `control_profs`: (T or 1) x O x S tensor of control profiles,
+            or None
+        `profile_length`: length of profile, O
+        `num_tasks`: number of tasks, T
+        `num_strands`: number of strands, S
+        `controls`: the kind of controls used: "matched" or "shared"; if
+            "matched", the control profiles taken in and returned are
+            T x O x S; if "shared", the profiles are 1 x O x S
+        `bg_size`: the number of background examples to generate, G
+    Returns the tensor of `control_profs`, replicated G times. If `controls` is
+    "matched", this becomes a G x T x O x S tensor; if `controls` is "shared",
+    this is a G x 1 x O x S tensor. If `control_profs` is None, then a tensor of
+    all 0s is returned, whose shape is determined by `controls`.
+    """
+    if profs_trans is None:
+        profs_trans_bg_shape = (
+            bg_size, num_tasks, profile_length, num_strands
+        )
+        return place_tensor(torch.zeros(profs_trans_bg_shape)).float()
+
+    return torch.stack([profs_trans] * bg_size, dim=0)
 
 
 def combine_input_seq_mult_and_diffref(mult, orig_inp, bg_data):
@@ -161,6 +195,59 @@ class WrapperProfileModel(torch.nn.Module):
     def forward(self, input_seqs, cont_profs=None):
         # Run through inner model, disregarding the predicted counts
         logit_pred_profs, _ = self.inner_model(input_seqs, cont_profs)
+       
+        # As with the computation of the gradients, instead of explaining the
+        # logits, explain the mean-normalized logits, weighted by the final
+        # probabilities after passing through the softmax; this exponentially
+        # increases the weight for high-probability positions, and exponentially
+        # reduces the weight for low-probability positions, resulting in a
+        # cleaner signal
+
+        # Subtract mean along output profile dimension; this wouldn't change
+        # softmax probabilities, but normalizes the magnitude of the logits
+        norm_logit_pred_profs = logit_pred_profs - \
+            torch.mean(logit_pred_profs, dim=2, keepdim=True)
+
+        # Weight by post-softmax probabilities, but detach it from the graph to
+        # avoid explaining those
+        pred_prof_probs = profile_models.profile_logits_to_log_probs(
+            logit_pred_profs
+        ).detach()
+        weighted_norm_logits = norm_logit_pred_profs * pred_prof_probs
+
+        if self.task_index is not None:
+            # Subset to specific task
+            weighted_norm_logits = \
+                weighted_norm_logits[:, self.task_index : (self.task_index + 1)]
+        prof_sum = torch.sum(weighted_norm_logits, dim=(1, 2, 3))
+
+        # DeepSHAP requires the shape to be B x 1
+        return torch.unsqueeze(prof_sum, dim=1)
+
+
+class WrapperProfileTransferModel(torch.nn.Module):
+    def __init__(self, inner_model, task_index=None):
+        """
+        Takes a profile model and constructs wrapper model around it. This model
+        takes in the same inputs (i.e. input tensor of shape B x I x 4 and
+        perhaps a set of control profiles of shape B x (T or 1) x O x S). The
+        model will return an output of B x 1, which is the profile logits
+        (weighted), aggregated to a scalar for each input.
+        Arguments:
+            `inner_model`: a trained `ProfilePredictorWithMatchedControls`,
+                `ProfilePredictorWithSharedControls`, or
+                `ProfilePredictorWithoutControls`
+            `task_index`: a specific task index (0-indexed) to perform
+                explanations from (i.e. explanations will only be from the
+                specified outputs); by default explains all tasks in aggregate
+        """
+        super().__init__()
+        self.inner_model = inner_model
+        self.task_index = task_index
+        
+    def forward(self, input_seqs, profs_trans, cont_profs=None):
+        # Run through inner model, disregarding the predicted counts
+        logit_pred_profs, _ = self.inner_model(input_seqs, cont_profs, profs_trans)
        
         # As with the computation of the gradients, instead of explaining the
         # logits, explain the mean-normalized logits, weighted by the final
@@ -368,6 +455,174 @@ def create_profile_explainer(
                 cont_profs_t = place_tensor(torch.tensor(cont_profs)).float()
                 return explainer.shap_values(
                     [input_seqs_t, cont_profs_t], progress_message=None
+                )[0]
+        except Exception as e:
+            raise e
+        finally:
+            show_stdout()
+
+    return explain_fn
+
+def create_profile_trans_explainer(
+    model, input_length, profile_length, num_tasks, num_strands, controls,
+    task_index=None, bg_size=10, seed=20200219
+):
+    """
+    Given a trained `ProfilePredictor` model, creates a Shap DeepExplainer that
+    returns hypothetical scores for given input sequences.
+    Arguments:
+        `model`: a trained `ProfilePredictorWithMatchedControls`,
+            `ProfilePredictorWithSharedControls`, or
+            `ProfilePredictorWithoutControls`
+        `input_length`: length of input sequence, I
+        `profile_length`: length of output profiles, O
+        `num_tasks`: number of tasks in model, T
+        `num_strands`: number of strands in model, T
+        `controls`: the kind of controls used: "matched", "shared", or None;
+            if "matched", the control profiles taken in and returned are
+            T x O x S; if "shared", the profiles are 1 x O x S; if None, no
+            controls need to be provided
+        `task_index`: a specific task index (0-indexed) to perform explanations
+            from (i.e. explanations will only be from the specified outputs); by
+            default explains all tasks
+        `bg_size`: the number of background examples to generate
+    Returns a function that takes in input sequences (B x I x 4 array) and
+    control profiles (B x (T or 1) x O x S array, or nothing at all), and
+    outputs hypothetical scores for the input sequences (B x I x 4 array).
+    """
+    wrapper_model = WrapperProfileTransferModel(model, task_index=task_index)
+
+    def bg_func(model_inputs):
+        """
+        Given a pair of inputs to the wrapper model, returns the backgrounds
+        for the model.
+        Arguments:
+            `model_inputs`: a list of either the input sequence (I x 4 tensor)
+                alone, or a pair of the input sequence and control profiles 
+                ((T or 1) x O x S tensor), depending on `controls`
+        If `controls` is None, the `model_inputs` must be just the input
+        sequence, and this returns a list of just the input sequence background
+        (G x I x 4 tensor). Otherwise, `model_inputs` must be the pair of the
+        input sequence and control profiles, and this function will return a
+        pair of tensors: the G x I x 4 tensor for the background input
+        sequences, and a G x (T or 1) x O x S tensor of background control
+        profiles.
+        Note that in the PyTorch implementation of DeepSHAP, `model_inputs` may
+        be None, in which case this function still needs to return tensors, but
+        of the right shapes.
+        """
+        if controls is None:
+            if model_inputs is None:
+                input_seq, prof_trans = None, None
+            else:
+                input_seq, prof_trans = model_inputs
+            return [
+                create_input_seq_background(
+                    input_seq, input_length, bg_size=bg_size, seed=seed
+                ),
+                create_profile_trans_background(
+                    prof_trans, profile_length, num_tasks, num_strands,
+                    bg_size=bg_size
+                )
+            ]
+        else:
+            if model_inputs is None:
+                input_seq, prof_trans, control_profs = None, None, None
+            else:
+                input_seq, prof_trans, control_profs = model_inputs
+            return [
+                create_input_seq_background(
+                    input_seq, input_length, bg_size=bg_size, seed=seed
+                ),
+                create_profile_transfer_background(
+                    prof_trans, profile_length, num_tasks, num_strands,
+                    bg_size=bg_size
+                ),
+                create_profile_control_background(
+                    control_profs, profile_length, num_tasks, num_strands,
+                    controls=controls, bg_size=bg_size
+                )
+            ]
+
+    def combine_mult_and_diffref_func(mult, orig_inp, bg_data):
+        """
+        Computes the hypothetical contribution of any base along the inputs
+        to the final output. This is a wrapper function around
+        `combine_input_seq_mult_and_diffref` (further information can be found
+        there). Note that the arguments must be named as such in this
+        implementation of DeepSHAP.
+        Arguments:
+            `mult`: the multipliers for the background data; if `controls` is
+                None, then this a list of just the G x I x 4 array of input
+                sequence backgrounds; otherwise, this is a pair of input
+                sequence and control profile backgrounds (a G x (T or 1) x O x S
+                array)
+            `orig_inp`: the original target inputs; if `controls` is None, then
+                this is a list of just the I x 4 array of input sequence;
+                otherwise, it is a pair of the input sequence and a
+                (T or 1) x O x S array of control profiles
+            `bg_data`: the backgrounds themselves; if `controls` is None, then
+                this is a list of just the G x I x 4 array of input sequence
+                backgrounds; otherwise, it is a pair of the input sequence and
+                control profile backgrounds (the latter is a
+                G x (T or 1) x O x S) array
+        If `controls` is None, returns a list of just the hypothetical
+        importance scores of the input sequence; if `controls` is not None (to
+        be consistent with other profile model explaining functions), this will
+        return a pair of the input sequence scores, and an array of all zeros,
+        of shape (T or 1) x O x S.
+        """
+        if controls is None:
+            input_seq_bg_mult, profs_trans_bg_mult = mult
+            input_seq, profs_trans = orig_inp
+            input_seq_bg, profs_trans_bg = bg_data
+        else:
+            input_seq_bg_mult, cont_profs_bg_mult, profs_trans_bg_mult = mult
+            input_seq, cont_profs, profs_trans = orig_inp
+            input_seq_bg, cont_profs_bg, profs_trans_bg = bg_data
+        
+        input_seq_scores = combine_input_seq_mult_and_diffref(
+            input_seq_bg_mult, input_seq, input_seq_bg
+        )
+        if controls is None:
+            return [input_seq_scores, np.zeros_like(profs_trans)]
+        else:
+            return [input_seq_scores, np.zeros_like(profs_trans), np.zeros_like(cont_profs)]
+
+    explainer = shap.DeepExplainer(
+        model=wrapper_model,
+        data=bg_func,
+        combine_mult_and_diffref=combine_mult_and_diffref_func
+    )
+
+    def explain_fn(
+        input_seqs, profs_trans, cont_profs=None, batch_size=128, hide_shap_output=False
+    ):
+        """
+        Given input sequences and control profiles, returns hypothetical scores
+        for the input sequences.
+        Arguments:
+            `input_seqs`: a B x I x 4 array
+            `cont_profs`: a B x (T or 1) x O x S array, or None
+            `batch_size`: batch size for computation
+            `hide_shap_output`: if True, do not show any warnings from DeepSHAP
+        Returns a B x I x 4 array containing hypothetical importance scores for
+        each of the B input sequences.
+        """
+        scores = np.empty_like(input_seqs)
+        input_seqs_t = place_tensor(torch.tensor(input_seqs)).float()
+        profs_trans_t = place_tensor(torch.tensor(profs_trans)).float()
+        try:
+            if hide_shap_output:
+                hide_stdout()
+            if controls is None:
+                return explainer.shap_values(
+                    [input_seqs_t, profs_trans_t], progress_message=None
+                )[0]
+            else:
+                cont_profs_t = place_tensor(torch.tensor(cont_profs)).float()
+                return explainer.shap_values(
+                    [input_seqs_t, profs_trans_t, cont_profs_t], progress_message=None
                 )[0]
         except Exception as e:
             raise e
