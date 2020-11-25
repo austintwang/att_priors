@@ -64,7 +64,7 @@ def restore_model(model_class, load_path, model_args_extras=None):
     model_state = load_dict["model_state"]
     model_creation_args = load_dict["model_creation_args"]
     if model_args_extras is not None:
-        model_args_extras.update(model_args_extras)
+        model_creation_args.update(model_args_extras)
     # print(model_creation_args) ####
     model = model_class(**model_creation_args)
     model.load_state_dict(model_state)
