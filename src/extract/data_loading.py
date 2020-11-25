@@ -63,7 +63,7 @@ def get_profile_trans_input_func(
         with open(files_spec_path, "r") as f:
             files_spec = json.load(f)
     else:
-        files_spec = files_spec
+        files_spec = files_spec_path
 
     # Maps coordinates to 1-hot encoded sequence
     coords_to_seq = feature_util.CoordsToSeq(
