@@ -244,6 +244,7 @@ if __name__ == "__main__":
 
     models_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_v5/"
     hdf5_dir = "/mnt/lab_data2/atwang/att_priors/data/processed/ENCODE_DNase/profile/labels"
+    bed_dir = "/mnt/lab_data2/amtseng/share/austin/dnase"
     out_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/deepshap/transfer_v5/"
 
     cell_types = {
@@ -267,7 +268,8 @@ if __name__ == "__main__":
 
             files_spec_path = {
                 "profile_hdf5": os.path.join(hdf5_dir, f"{i}/{i}_profiles.h5"),
-                "profile_trans_hdf5": os.path.join(hdf5_dir, f"{j}/{j}_profiles.h5")
+                "profile_trans_hdf5": os.path.join(hdf5_dir, f"{j}/{j}_profiles.h5"),
+                "peak_beds": [os.path.join(bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in i_ex]
             }
             out_path = os.path.join(out_dir, f"{i}_from_{j}")
 
