@@ -49,7 +49,7 @@ def make_shap_scores(
             scores
         `model`: path to the model, `model_path`
     """
-    assert model_type in ("binary", "profile")
+    assert model_type in ("binary", "prof_trans", "profile")
     
     # Determine the model class and import the model
     if model_type == "binary":
