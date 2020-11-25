@@ -16,7 +16,7 @@ import os
 def make_shap_scores(
     model_path, model_type, files_spec_path, input_length, num_tasks, out_path,
     reference_fasta, chrom_sizes, task_index=None, profile_length=1000,
-    controls=None, num_strands=2, chrom_set=None, batch_size=128
+    controls=None, num_strands=2, chrom_set=None, batch_size=128, model_args_extras=None
 ):
     """
     Computes SHAP scores over an entire dataset, and saves them as an HDF5 file.
@@ -49,7 +49,7 @@ def make_shap_scores(
             scores
         `model`: path to the model, `model_path`
     """
-    print(model_type) ####
+    # print(model_type) ####
     assert model_type in ("binary", "prof_trans", "profile")
     
     # Determine the model class and import the model
@@ -65,7 +65,7 @@ def make_shap_scores(
         model_class = profile_models.ProfilePredictorWithoutControls
     torch.set_grad_enabled(True)
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    model = model_util.restore_model(model_class, model_path)
+    model = model_util.restore_model(model_class, model_path, model_args_extras=model_args_extras)
     model.eval()
     model = model.to(device)
 
@@ -210,7 +210,7 @@ def make_shap_scores(
 def main(
     model_path, model_type, files_spec_path, num_tasks, task_index, out_path,
     chrom_set, input_length, reference_fasta, chrom_sizes, profile_length,
-    controls, num_strands, batch_size
+    controls, num_strands, batch_size, model_args_extras=None,
 ):
     if not input_length:
         if model_type == "binary":
@@ -224,7 +224,7 @@ def main(
     make_shap_scores(
         model_path, model_type, files_spec_path, input_length, num_tasks,
         out_path, reference_fasta, chrom_sizes, task_index, profile_length,
-        controls, num_strands, chrom_set, batch_size
+        controls, num_strands, chrom_set, batch_size, model_args_extras=model_args_extras,
     )
 
 if __name__ == "__main__":
@@ -271,8 +271,14 @@ if __name__ == "__main__":
             }
             out_path = os.path.join(out_dir, f"{i}_from_{j}")
 
+            extras = {
+                "prof_trans_conv_kernel_size": 15,
+                "prof_trans_conv_channels": [5],
+                "prof_conv_kernel_size":
+            }
+
             main(
                 model_path, model_type, files_spec_path, num_tasks, task_index, out_path,
                 chrom_set, input_length, reference_fasta, chrom_sizes, profile_length,
-                controls, num_strands, batch_size
+                controls, num_strands, batch_size, model_args_extras=extras
             )
