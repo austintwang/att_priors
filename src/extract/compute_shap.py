@@ -1,4 +1,4 @@
-from model.util import place_tensor_util
+from model.util import place_tensor as place_tensor_util
 import model.profile_models as profile_models
 import model.binary_models as binary_models
 from extract.dinuc_shuffle import dinuc_shuffle
