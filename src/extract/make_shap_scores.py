@@ -274,7 +274,6 @@ if __name__ == "__main__":
             extras = {
                 "prof_trans_conv_kernel_size": 15,
                 "prof_trans_conv_channels": [5],
-                "prof_conv_kernel_size":
             }
 
             main(
