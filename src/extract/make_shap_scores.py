@@ -13,6 +13,8 @@ import h5py
 import click
 import os
 
+GPU = "4"
+
 def make_shap_scores(
     model_path, model_type, files_spec_path, input_length, num_tasks, out_path,
     reference_fasta, chrom_sizes, task_index=None, profile_length=1000,
@@ -64,7 +66,7 @@ def make_shap_scores(
     elif controls is None:
         model_class = profile_models.ProfilePredictorWithoutControls
     torch.set_grad_enabled(True)
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    device = torch.device(f"cuda:{GPU}") if torch.cuda.is_available() else torch.device("cpu")
     model = model_util.restore_model(model_class, model_path, model_args_extras=model_args_extras)
     model.eval()
     model = model.to(device)
@@ -109,7 +111,7 @@ def make_shap_scores(
             model, input_length, task_index=task_index
         )
     elif model_type == "prof_trans":
-        explainer = compute_shap.create_profile_transfer_explainer(
+        explainer = compute_shap.create_profile_trans_explainer(
             model, input_length, profile_length, num_tasks, num_strands,
             controls, task_index=task_index
         )
