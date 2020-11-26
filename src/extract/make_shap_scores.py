@@ -273,7 +273,7 @@ if __name__ == "__main__":
                 "profile_trans_hdf5": os.path.join(hdf5_dir, f"{j}/{j}_profiles.h5"),
                 "peak_beds": [os.path.join(bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in i_ex]
             }
-            out_path = os.path.join(out_dir, f"{i}_from_{j}")
+            out_path = os.path.join(out_dir, f"{i}_from_{j}_shap.h5")
 
             extras = {
                 "prof_trans_conv_kernel_size": 15,
