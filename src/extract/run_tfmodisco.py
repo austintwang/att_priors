@@ -6,7 +6,7 @@ from collections import OrderedDict
 import modisco
 import click
 
-os.environ["CUDA_VISIBLE_DEVICES"]="4"
+os.environ["CUDA_VISIBLE_DEVICES"] = "4"
 
 def import_shap_scores(shap_scores_hdf5, center_cut_size=None):
     """
