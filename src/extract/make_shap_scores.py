@@ -220,7 +220,7 @@ def main(
         else:
             input_length = 1346
 
-    if chrom_set:
+    if chrom_set and isinstance(chrom_set, str):
         chrom_set = chrom_set.split(",")
     
     make_shap_scores(
