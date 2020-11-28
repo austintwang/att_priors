@@ -86,7 +86,7 @@ def import_tfmodisco_motifs(
                 
                 if plot_all_motifs:
                     pattern_dir = os.path.join(out_dir, "all", metacluster_key, pattern_name)
-                    os.makedirs(metacluster_dir, exist_ok=True)
+                    os.makedirs(pattern_dir, exist_ok=True)
                     print("Pattern: %s (%d/%d)" % (pattern_name, pattern_i + 1, num_patterns))
                     print("--------------------------------------")
 
