@@ -147,7 +147,8 @@ def plot_weights(array,
                  plot_funcs=default_plot_funcs,
                  highlight={},
                  ylabel="",
-                 ylim=None):
+                 ylim=None,
+                 out_path=None):
     fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111) 
     plot_weights_given_ax(ax=ax, array=array,
@@ -159,4 +160,7 @@ def plot_weights(array,
         highlight=highlight,
         ylabel=ylabel,
         ylim=ylim)
-    plt.show()
+    if out_path is None:
+        plt.show()
+    else:
+        plt.savefig(out_path)
