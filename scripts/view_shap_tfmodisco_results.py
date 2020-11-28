@@ -4,6 +4,7 @@ sys.path.append(os.path.abspath("../src/"))
 import plot.viz_sequence as viz_sequence
 import h5py
 import numpy as np
+import matplotlib.pyplot as plt
 import tqdm
 
 def find_motifs(input_seqs, query_seq, center_slice):
