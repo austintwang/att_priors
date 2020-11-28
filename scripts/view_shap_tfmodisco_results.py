@@ -102,6 +102,7 @@ def import_tfmodisco_motifs(
                     plt.clf()
 
                 pfm = pattern["sequence"]["fwd"][:]
+                print(pfm) ####
                 act_contribs = pattern["task0_contrib_scores"]["fwd"][:]
                 
                 # Check that the contribution scores are overall positive
