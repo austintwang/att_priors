@@ -49,6 +49,7 @@ def plot_shap(shap_scores_path, out_dir):
     os.makedirs(plt_dir, exist_ok=True)
     for index in np.random.choice(hyp_scores.shape[0], size=5, replace=False):
         viz_sequence.plot_weights((hyp_scores[index] * input_seqs[index])[570:770], out_path=os.path.join(plt_dir, "hyp_{index}.svg"), subticks_frequency=100)
+        plt.clf()
 
 def import_tfmodisco_motifs(
     tfm_results_hdf5, background_freqs, out_dir, min_seqlets=0, min_ic=0.6, ic_window=6, trim_flank_ic_frac=0.2,
@@ -96,8 +97,9 @@ def import_tfmodisco_motifs(
                     print("Hypothetical contributions")
                     viz_sequence.plot_weights(pattern["task0_hypothetical_contribs"]["fwd"][:], out_path=os.path.join(pattern_dir, "hypothetical_contribs.svg"))
                     print("Contribution_scores")
-                    viz_sequence.plot_weights(pattern["task0_contrib_scores"]["fwd"][:], out_path=os.path.join(pattern_dir, "contrib_scores.svg"))
-                
+                    viz_sequence.plot_weights(pattern["task0_contrib_scores"]["fwd"][:], out_path=os.path.join(pattern_dir, "contrib_scores.svg")) 
+                    plt.clf()
+
                 pfm = pattern["sequence"]["fwd"][:]
                 act_contribs = pattern["task0_contrib_scores"]["fwd"][:]
                 
@@ -140,10 +142,13 @@ def import_tfmodisco_motifs(
         print("Final motifs: %d total" % len(cwms))
         print("==========================================")
         passed_dir = os.path.join(out_dir, "final")
+        os.makedirs(passed_dir, exist_ok=True)
         for i in range(len(cwms)):
             print("Motif %d (%d seqlets)" % (i + 1, num_seqlets[i]))
             viz_sequence.plot_weights(cwms[i], out_path=os.path.join(passed_dir, f"cwm_{i}.svg"))
             viz_sequence.plot_weights(pwms[i], out_path=os.path.join(passed_dir, f"pwm_{i}.svg"))
+            plt.clf()
+
     return cwms, pwms
 
 if __name__ == '__main__':
@@ -169,11 +174,11 @@ if __name__ == '__main__':
 
         out_dir = os.path.join(out_dir_base, f"{i}_from_{j}", "motifs")
 
-        # plot_shap(shap_scores_path, out_dir)
-
         motifs = import_tfmodisco_motifs(tfm_results_path, background_freqs, out_dir, plot_all_motifs=True, plot_passed_motifs=True)
 
         # motifs = import_tfmodisco_motifs(tfm_results_path, background_freqs, min_seqlets=0, min_ic=0.6, trim_flank_ic_frac=0, max_length=100, plot_all_motifs=False, plot_passed_motifs=True)
 
         # viz_sequence.plot_weights(np.flip(motifs[0][9], axis=(0, 1)))
+
+        plot_shap(shap_scores_path, out_dir)
 
