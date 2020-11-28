@@ -169,7 +169,7 @@ if __name__ == '__main__':
 
         out_dir = os.path.join(out_dir_base, f"{i}_from_{j}", "motifs")
 
-        plot_shap(shap_scores_path, out_dir)
+        # plot_shap(shap_scores_path, out_dir)
 
         motifs = import_tfmodisco_motifs(tfm_results_path, background_freqs, out_dir, plot_all_motifs=True, plot_passed_motifs=True)
 
