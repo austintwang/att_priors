@@ -102,7 +102,7 @@ def import_tfmodisco_motifs(
                     plt.clf()
 
                 pfm = pattern["sequence"]["fwd"][:]
-                print(pfm) ####
+                # print(pfm) ####
                 act_contribs = pattern["task0_contrib_scores"]["fwd"][:]
                 
                 # Check that the contribution scores are overall positive
@@ -114,6 +114,7 @@ def import_tfmodisco_motifs(
                     continue
                 
                 pwm = pfm_to_pwm(pfm, background_freqs)
+                print(pwm) ####
                 pwm_ic = pfm_info_content(pfm, background_freqs)
                 max_windowed_ic = max(
                     np.sum(pwm_ic[i : (i + ic_window)]) for i in range(len(pwm_ic) - ic_window + 1)
