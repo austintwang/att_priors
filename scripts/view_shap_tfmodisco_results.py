@@ -49,7 +49,7 @@ def plot_shap(shap_scores_path, out_dir):
     plt_dir = os.path.join(out_dir, "shap_weights")
     os.makedirs(plt_dir, exist_ok=True)
     for index in np.random.choice(hyp_scores.shape[0], size=5, replace=False):
-        viz_sequence.plot_weights((hyp_scores[index] * input_seqs[index])[570:770], out_path=os.path.join(plt_dir, "hyp_{index}.svg"), subticks_frequency=100)
+        viz_sequence.plot_weights((hyp_scores[index] * input_seqs[index])[570:770], out_path=os.path.join(plt_dir, f"hyp_{index}.svg"), subticks_frequency=100)
         plt.clf()
 
 def import_tfmodisco_motifs(
