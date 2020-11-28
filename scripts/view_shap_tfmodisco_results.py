@@ -114,8 +114,9 @@ def import_tfmodisco_motifs(
                     continue
                 
                 pwm = pfm_to_pwm(pfm, background_freqs)
-                print(pwm) ####
+                # print(pwm) ####
                 pwm_ic = pfm_info_content(pfm, background_freqs)
+                print(pwm_ic) ####
                 max_windowed_ic = max(
                     np.sum(pwm_ic[i : (i + ic_window)]) for i in range(len(pwm_ic) - ic_window + 1)
                 )
