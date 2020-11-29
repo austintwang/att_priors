@@ -511,6 +511,7 @@ def train_model(
         val_epoch_loss_hist = []
 
     best_val_epoch_loss, best_model_state = float("inf"), None
+    best_model_epoch = None
 
     for epoch in range(num_epochs):
         if torch.cuda.is_available:
@@ -577,6 +578,8 @@ def train_model(
                 best_delta = np.max(np.diff(val_epoch_loss_hist))
                 if best_delta < early_stop_min_delta:
                     break  # Not improving enough
+
+    _run.log_scalar(f"{trans_id}_best_epoch", best_model_epoch)
 
     # Compute evaluation metrics and log them
     for data_loader, prefix in [
