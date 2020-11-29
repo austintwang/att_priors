@@ -176,7 +176,7 @@ if __name__ == '__main__':
             shap_scores_path = os.path.join(shap_dir, f"{i}_from_{j}_shap.h5")
             tfm_results_path = os.path.join(tfm_dir, f"{i}_from_{j}_modisco.h5")
 
-            out_dir = os.path.join(out_dir_base, f"{i}_from_{j}", "motifs_ic_0")
+            out_dir = os.path.join(out_dir_base, f"{i}_from_{j}", "motifs")
 
             motifs = import_tfmodisco_motifs(tfm_results_path, background_freqs, out_dir, plot_all_motifs=True, plot_passed_motifs=True, min_ic=0.)
 
