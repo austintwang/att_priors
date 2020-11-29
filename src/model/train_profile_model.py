@@ -11,7 +11,7 @@ import feature.make_profile_dataset as make_profile_dataset
 
 MODEL_DIR = os.environ.get(
     "MODEL_DIR",
-    "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/baseline/"
+    "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/baseline_v2/"
 )
 
 train_ex = sacred.Experiment("train", ingredients=[
@@ -27,7 +27,7 @@ def config(dataset):
     controls = "matched"
 
     # Number of dilating convolutional layers to apply
-    num_dil_conv_layers = 7
+    num_dil_conv_layers = 9
 
     # Number of filters to use for each dilating convolutional layer (i.e.
     # number of channels to output)
