@@ -280,8 +280,33 @@ if __name__ == "__main__":
                 "prof_trans_conv_channels": [5],
             }
 
-            main(
-                model_path, model_type, files_spec_path, num_tasks, task_index, out_path,
-                chrom_set, input_length, reference_fasta, chrom_sizes, profile_length,
-                controls, num_strands, batch_size, model_args_extras=extras
-            )
+            # main(
+            #     model_path, model_type, files_spec_path, num_tasks, task_index, out_path,
+            #     chrom_set, input_length, reference_fasta, chrom_sizes, profile_length,
+            #     controls, num_strands, batch_size, model_args_extras=extras
+            # )
+
+    model_type = "prof"
+    models_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/baseline_v2/"
+    out_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/deepshap/baseline_v2/"
+    run_id = "1"
+
+    for i, i_ex in cell_types.items():
+        metrics_path = os.path.join(models_dir, run_id, "metrics.json")
+        with open(metrics_path, "r") as f:
+            metrics = json.load(f)
+
+        best_epoch = metrics[f"{i}_dnase_base_best_epoch"]["values"][0]
+        model_path = os.path.join(models_dir, f"{i}_dnase_base_{run_id}", f"model_ckpt_epoch_{best_epoch}.pt")
+
+        files_spec_path = {
+            "profile_hdf5": os.path.join(hdf5_dir, f"{i}/{i}_profiles.h5"),
+            "peak_beds": [os.path.join(bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in i_ex]
+        }
+        out_path = os.path.join(out_dir, f"{i}_base_shap.h5")
+
+        main(
+            model_path, model_type, files_spec_path, num_tasks, task_index, out_path,
+            chrom_set, input_length, reference_fasta, chrom_sizes, profile_length,
+            controls, num_strands, batch_size
+        )
