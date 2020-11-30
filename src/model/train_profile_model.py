@@ -561,6 +561,7 @@ def train_model(
         if val_epoch_loss < best_val_epoch_loss:
             best_val_epoch_loss = val_epoch_loss
             best_model_state = model.state_dict()
+            best_model_epoch = epoch
 
         # If losses are both NaN, then stop
         if np.isnan(train_epoch_loss) and np.isnan(val_epoch_loss):

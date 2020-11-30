@@ -297,6 +297,7 @@ if __name__ == "__main__":
             metrics = json.load(f)
 
         best_epoch = metrics[f"{i}_dnase_base_best_epoch"]["values"][0]
+        print(metrics[f"{i}_dnase_base_val_epoch_loss"]) ####
         model_path = os.path.join(models_dir, f"{i}_dnase_base_{run_id}", f"model_ckpt_epoch_{best_epoch}.pt")
 
         files_spec_path = {
