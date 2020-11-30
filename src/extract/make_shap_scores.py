@@ -286,7 +286,7 @@ if __name__ == "__main__":
             #     controls, num_strands, batch_size, model_args_extras=extras
             # )
 
-    model_type = "prof"
+    model_type = "profile"
     models_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/baseline_v2/"
     out_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/deepshap/baseline_v2/"
     run_id = "1"
