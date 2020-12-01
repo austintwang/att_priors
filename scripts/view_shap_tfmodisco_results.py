@@ -186,3 +186,20 @@ if __name__ == '__main__':
 
             plot_shap(shap_scores_path, out_dir)
 
+    shap_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/deepshap/transfer_v5/"
+    tfm_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/modisco/transfer_v5/"
+
+    for i, i_ex in cell_types.items():
+        shap_scores_path = os.path.join(shap_dir, f"{i}_base_shap.h5")
+        tfm_results_path = os.path.join(tfm_dir, f"{i}_base_modisco.h5")
+
+        out_dir = os.path.join(out_dir_base, f"{i}_base_{j}", "motifs")
+
+        motifs = import_tfmodisco_motifs(tfm_results_path, background_freqs, out_dir, plot_all_motifs=True, plot_passed_motifs=True, min_ic=0.)
+
+        # motifs = import_tfmodisco_motifs(tfm_results_path, background_freqs, min_seqlets=0, min_ic=0.6, trim_flank_ic_frac=0, max_length=100, plot_all_motifs=False, plot_passed_motifs=True)
+
+        # viz_sequence.plot_weights(np.flip(motifs[0][9], axis=(0, 1)))
+
+        plot_shap(shap_scores_path, out_dir)
+
