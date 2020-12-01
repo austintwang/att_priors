@@ -186,8 +186,8 @@ if __name__ == '__main__':
 
             # plot_shap(shap_scores_path, out_dir)
 
-    shap_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/deepshap/transfer_v5/"
-    tfm_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/modisco/transfer_v5/"
+    shap_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/deepshap/baseline_v2/"
+    tfm_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/modisco/baseline_v2/"
 
     for i, i_ex in cell_types.items():
         shap_scores_path = os.path.join(shap_dir, f"{i}_base_shap.h5")
