@@ -157,4 +157,14 @@ if __name__ == "__main__":
             outfile = os.path.join(out_dir, f"{i}_from_{j}_modisco.h5")
             seqlet_outfile = os.path.join(out_dir, f"{i}_from_{j}_seqlets.fasta")
 
-            main(shap_scores_hdf5, outfile, seqlet_outfile, center_cut_size)
+            # main(shap_scores_hdf5, outfile, seqlet_outfile, center_cut_size)
+
+    shap_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/deepshap/baseline_v2/"
+    out_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/modisco/baseline_v2/"
+
+    for i, i_ex in cell_types.items():
+        shap_scores_hdf5 = os.path.join(shap_dir,  f"{i}_base_shap.h5")
+        outfile = os.path.join(out_dir, f"{i}_base_modisco.h5")
+        seqlet_outfile = os.path.join(out_dir, f"{i}_base_seqlets.fasta")
+
+        main(shap_scores_hdf5, outfile, seqlet_outfile, center_cut_size)
