@@ -143,12 +143,105 @@ def get_positive_profile_coords(files_spec_path, task_ind=None, chrom_set=None):
     peaks = []
     peaks_beds = files_spec["peak_beds"][task_ind] if task_ind is not None \
         else files_spec["peak_beds"]
-    for peaks_bed in files_spec["peak_beds"]:
+    for peaks_bed in peaks_beds:
         table = pd.read_csv(peaks_bed, sep="\t", header=None)
         if chrom_set is not None:
             table = table[table[0].isin(chrom_set)]
         peaks.append(table.values[:, :3])
     return np.concatenate(peaks)       
+
+def query_peak(query_table, peak):
+    chrom, start, end = peak[:3]
+    begin_hash = int(start) // 1000
+    end_hash = int(end) // 1000
+    candidates = set()
+    for pos_hash in range(begin_hash, end_hash + 1):
+        candidates |= query_table.get((chrom, pos_hash,), set())
+
+    intersects = []
+    for c in candidates:
+        start_c, end_c = c
+        if start <= end_c and start_c <= end:
+            intersects.append((chrom, start_c, end_c),)
+            # distance = np.abs((start + end) - (start_c + end_c)) / 2
+            # intersects[(chrom, start_c, end_c)] = distance
+
+    return intersects
+    # return min(intersects, key=intersects.get) if intersects else (None, None, None)
+
+def get_profile_footprint_coords(files_spec_path, task_ind=None, footprint_ind=None, prof_size=None, region_size=None, chrom_set=None):
+    """
+    Gets the set of positive coordinates for a profile model from the files
+    specs. The coordinates consist of peaks collated over all tasks.
+    Arguments:
+        `files_spec_path`: path to the JSON files spec for the model
+        `task_ind`: if specified, loads only the coordinates for the task with
+            this index (0-indexed); by default loads for all tasks
+        `chrom_set`: if given, limit the set of coordinates to these chromosomes
+            only
+    Returns an N x 3 array of coordinates.
+    """
+    if isinstance(files_spec_path, str):
+        with open(files_spec_path, "r") as f:
+            files_spec = json.load(f)
+    else:
+        files_spec = files_spec_path
+
+    peaks_beds = files_spec["peak_beds"][task_ind] if task_ind is not None \
+        else files_spec["peak_beds"]
+    footprints_beds = files_spec["footprint_beds"][footprint_ind] if footprint_ind is not None \
+        else files_spec["footprint_beds"]
+
+    footprints_query = {}
+    for footprints_bed in footprints_beds:
+        table = pd.read_csv(footprints_bed, sep="\t", header=None)
+        if chrom_set is not None:
+            table = table[table[0].isin(chrom_set)]
+        chroms = table[0]
+        starts = table[1]
+        ends = table[2]
+        begin_hashes = starts.astype(int) // 1000
+        end_hashes = ends.astype(int) // 1000
+        for chrom, start, end, prof_start, prof_end, begin_hash, end_hash in zip(chroms, starts, ends, prof_starts, prof_ends, begin_hashes, end_hashes):
+            for pos_hash in range(begin_hash, end_hash + 1):
+                footprints_query.setdefault((chrom, pos_hash), set()).add((start, end, prof_start, prof_end),)
+
+    peaks = []
+    footprints_profile = {}
+    footprints_region = {}
+    for peaks_bed in peaks_beds:
+        table = pd.read_csv(peaks_bed, sep="\t", header=None)
+        if chrom_set is not None:
+            table = table[table[0].isin(chrom_set)]
+        chroms = table[0]
+        starts = table[1]
+        ends = table[2]
+        if prof_size is None:
+            prof_starts = starts
+            prof_ends = ends
+        else:
+            center = (0.5 * (starts + ends)).astype(int)
+            half_size = int(0.5 * prof_size)
+            prof_starts = center - half_size
+            prof_ends = prof_starts + size
+
+        if region_size is None:
+            region_starts = starts
+            region_ends = ends
+        else:
+            center = (0.5 * (starts + ends)).astype(int)
+            half_size = int(0.5 * region_size)
+            region_starts = center - half_size
+            region_ends = region_starts + size
+
+        data = (chroms, starts, ends, prof_starts, prof_ends, region_starts, region_ends)
+        for chrom, start, end, prof_start, prof_end, region_start, region_end in zip(*data):
+            peak = (chrom, start, end)
+            footprints_profile[peak] = query_peak(footprints_query, (chrom, prof_start, prof_end))
+            footprints_region[peak] = query_peak(footprints_query, (chrom, region_start, region_end))
+            peaks.append(np.array(peak))
+
+    return np.vstack(peaks), footprints_profile, footprints_region
 
 
 def get_positive_binary_bins(files_spec_path, task_ind=None, chrom_set=None):
