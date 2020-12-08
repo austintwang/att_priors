@@ -573,16 +573,16 @@ def compute_performance_metrics(
     order of the predicted samples randomized relative to the true samples (i.e.
     shuffled along the first dimension)
     """
-    # # Multinomial NLL
-    # if print_updates:
-    #     print("\t\tComputing profile NLL... ", end="", flush=True)
-    #     start = datetime.now()
-    # nll = profile_multinomial_nll(
-    #     true_profs, log_pred_profs, true_counts
-    # )
-    # if print_updates:
-    #     end = datetime.now()
-    #     print("%ds" % (end - start).seconds)
+    # Multinomial NLL
+    if print_updates:
+        print("\t\tComputing profile NLL... ", end="", flush=True)
+        start = datetime.now()
+    nll = profile_multinomial_nll(
+        true_profs, log_pred_profs, true_counts
+    )
+    if print_updates:
+        end = datetime.now()
+        print("%ds" % (end - start).seconds)
 
     # Jensen-Shannon divergence
     # The true profile counts will be renormalized during JSD computation

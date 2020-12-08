@@ -1,13 +1,14 @@
 from model.util import place_tensor
 import model.profile_models as profile_models
-import model.binary_models as binary_models
-from extract.dinuc_shuffle import dinuc_shuffle
+import feature.make_profile_dataset as make_profile_dataset
 import model.profile_performance as profile_performance
+import data_loading
 import torch
 import numpy as np
 import os
 import sys
 import tqdm
+import sacred
 
 # GPU = "4"
 # place_tensor = lambda x: place_tensor_util(x, index=GPU)
@@ -15,12 +16,32 @@ import tqdm
 DEVNULL = open(os.devnull, "w")
 STDOUT = sys.stdout
 
+OUT_DIR = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/ablation/transfer_v5/"
+
+ablate_ex = sacred.Experiment("motif_ablation", ingredients=[
+    profile_performance.performance_ex
+])
+ablate_ex.observers.append(
+    sacred.observers.FileStorageObserver.create(MODEL_DIR)
+)
+
 def hide_stdout():
     sys.stdout = DEVNULL
 def show_stdout():
     sys.stdout = STDOUT
 
-def create_mask(fp_coords, peak_coord, center_size_to_use=None):
+@ablate_ex.config
+def config():
+    center_size_to_use = 2114
+    prof_size = 1000
+    num_runs = 5
+    batch_size = 128 
+    gpu_id = "4"
+    num_tasks = 1
+    chrom_set = [f"chr{i}" for i in range(1, 23)] + ["chrX"]
+
+@ablate_ex.capture
+def create_mask(fp_coords, peak_coord, center_size_to_use):
     chrom_s, start_s, end_s = peak_coord
     if center_size_to_use is not None:
         center = int(0.5 * (start_s + end_s))
@@ -68,9 +89,10 @@ def get_fp_to_peak(peak_to_fps):
             else:
                 fp_to_peak[fp] = peak
 
-def get_fp_to_seq_slice(fp_to_peak, peak_to_seq_idx, center_size_to_use=None):
+def get_fp_to_seq_slice(fps, fp_to_peak, peak_to_seq_idx, center_size_to_use):
     fp_to_seq_slice = {}
-    for fp, peak in fp_to_peak.items():
+    for fp in fps:
+        peak = fp_to_peak[fp]
         chrom_s, start_s, end_s = peak
         if center_size_to_use is not None:
             center = int(0.5 * (start_s + end_s))
@@ -87,15 +109,16 @@ def get_fp_to_seq_slice(fp_to_peak, peak_to_seq_idx, center_size_to_use=None):
 
     return fp_to_seq_slice
 
-def get_ablated_inputs(seqs, profiles, profs_ctrls, fp_to_seq_slice, fp_to_peak, seq_masks, num_runs, profs_trans=None):
+@ablate_ex.capture
+def get_ablated_inputs(fps, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, seq_masks, num_runs, profs_trans=None):
     seqs_out = []
     profs_ctrls_out = []
     profs_trans_out = []
-    profs_out = []
     fps = []
     for fp, seq_slice in fp_to_seq_slice.items():
         fps.append(fp)
 
+        seq_slice = fp_to_seq_slice[fp]
         seq_idx, start, end = seq_slice
         fp_len = end - start + 1
 
@@ -113,9 +136,6 @@ def get_ablated_inputs(seqs, profiles, profs_ctrls, fp_to_seq_slice, fp_to_peak,
             seq_runs[run_num+1, start:end+1, :] = seq[slc_start:slc_end, :]
         
         seqs_out.append(seq_runs)
-        
-        prof = profiles[seq_idx,:,:,:]
-        profs_out.append(prof)
 
         prof_ctrls = profs_ctrls[seq_idx,:,:,:]
         profs_ctrls_out.append(prof_ctrls)
@@ -125,10 +145,11 @@ def get_ablated_inputs(seqs, profiles, profs_ctrls, fp_to_seq_slice, fp_to_peak,
             profs_trans_out.append(profs_trans)
 
     if prof_trans is not None:
-        return fps, np.stack(seqs_out), np.stack(prof_ctrls), np.stack(prof), np.stack(prof_trans)
-    return fps, np.stack(seqs_out), np.stack(prof_ctrls), np.stack(prof)
+        return fps, np.stack(seqs_out), np.stack(prof_ctrls), np.stack(prof_trans)
+    return fps, np.stack(seqs_out), np.stack(prof_ctrls)
         
-def run_model(model_path, seqs, profs, profs_ctrls, fps, batch_size, gpu_id, model_args_extras=None, profs_trans=None):
+@ablate_ex.capture
+def run_model(model_path, seqs, profs_ctrls, fps, gpu_id, model_args_extras=None, profs_trans=None):
     torch.set_grad_enabled(True)
     device = torch.device(f"cuda:{gpu_id}") if torch.cuda.is_available() else torch.device("cpu")
     if profs_trans is not None:
@@ -140,50 +161,148 @@ def run_model(model_path, seqs, profs, profs_ctrls, fps, batch_size, gpu_id, mod
     model = model.to(device)
 
     num_runs = seqs.shape[1]
+    profs_preds_shape = (profs_ctrls.shape[0], seqs.shape[1], profs_ctrls.shape[1], profs_ctrls.shape[2], profs_ctrls.shape[3])
     profs_preds_logits = np.empty(profs_preds_shape)
+    counts_preds_shape = (profs_ctrls.shape[0], seqs.shape[1], profs_ctrls.shape[1], profs_ctrls.shape[3])
     counts_preds = np.empty(counts_preds_shape)
 
-    for i in tqdm.tqdm(range(0, len(fps), batch_size)):
-        j = min(i + batch_size, len(fps))
-        profs_b = util.place_tensor(torch.tensor(profs[i:j]), index=gpu_id).float() 
-        profs_ctrls_b = util.place_tensor(torch.tensor(profs_ctrls[i:j]), index=gpu_id).float() 
+    profs_ctrls_b = util.place_tensor(torch.tensor(profs_ctrls), index=gpu_id).float() 
+    if profs_trans is not None:
+        profs_trans_b = util.place_tensor(torch.tensor(profs_trans), index=gpu_id).float()
+
+    for run in range(seqs.shape[1]):
+        seqs_b = util.place_tensor(torch.tensor(seqs[:,run]), index=gpu_id).float() 
         if profs_trans is not None:
-            profs_trans_b = util.place_tensor(torch.tensor(profs_trans[i:j]), index=gpu_id).float()
+            profs_preds_logits_b, counts_preds_b = model(seqs_b, profs_ctrls_b, profs_trans_b)
+        else:
+            profs_preds_logits_b, counts_preds_b = model(seqs_b, profs_ctrls_b)
 
-        for run in range(num_runs):
-            seqs_b = util.place_tensor(torch.tensor(seqs[i:j,run]), index=gpu_id).float() 
-            if profs_trans is not None:
-                profs_preds_logits_b, counts_preds_b = model(seqs_b, profs_ctrls_b, profs_trans_b)
-            else:
-                profs_preds_logits_b, counts_preds_b = model(seqs_b, profs_ctrls_b)
-
-            profs_preds_logits_b = profs_preds_logits_b.detach().cpu().numpy()
-            counts_preds_b = counts_preds_b.detach().cpu().numpy()
-            profs_preds_logits[i:j,run] = profs_preds_logits_b
-            counts_preds[i:j,run] = counts_preds_b
+        profs_preds_logits_b = profs_preds_logits_b.detach().cpu().numpy()
+        counts_preds_b = counts_preds_b.detach().cpu().numpy()
+        profs_preds_logits[:,run] = profs_preds_logits_b
+        counts_preds[:,run] = counts_preds_b
 
     return profs_preds_logits, counts_preds
 
-def get_metrics(profs_preds_logits, counts_preds):
+@ablate_ex.capture
+def get_metrics(profs_preds_logits, counts_preds, num_runs):
+    profs_pred_logs = profs_preds_logits - scipy.special.logsumexp(profs_preds_logits, axis=3, keepdims=True)
+    profs_preds_logs_o = profs_preds_logs[:,0]
+    counts_preds_o = counts_preds[:,0]
+    profs_preds_o = np.exp(profs_preds_logs_o) * counts_preds_o
+    metrics = {}
+    for i in range(1, num_runs + 1):
+        profs_pred_logs_a = profs_pred_logs[:,i]
+        counts_preds_a = counts_preds[:,i]
+        metrics_run = profile_performance.compute_performance_metrics(profs_preds_o, profs_pred_logs_a, counts_preds_o, counts_preds_a)
+        for k, v in metrics_run.items():
+            metrics.setdefault(k, []).append(v)
+
+    return metrics
+
+@ablate_ex.capture
+def main(files_spec, model_path, reference_fasta, model_class, out_path, num_runs, chrom_set, num_tasks, model_args_extras=None):
+    peaks, peak_to_fp_prof, peak_to_fp_reg = data_loading.get_profile_footprint_coords(files_spec, prof_size=prof_size, region_size=center_size_to_use, chrom_set=chrom_set)
+    masks = {k: create_mask(k, v) for k, v in peak_to_fp_reg}
+    fp_to_peak = get_fp_to_peak(peak_to_fp_prof)
+    fps = list(fp_to_peak.keys())
+    # peak_to_seq_idx = {val: ind for ind, val in enumerate(peaks)}
+    # fp_to_seq_slice = get_fp_to_seq_slice(fp_to_peak, peak_to_seq_idx)
+
+    if model_class == "prof_trans":
+        input_func = data_loading.get_profile_trans_input_func(
+            files_spec, center_size_to_use, prof_size, reference_fasta,
+        )
+    else:
+        input_func = data_loading.get_profile_input_func(
+            files_spec, center_size_to_use, prof_size, reference_fasta,
+        )
+
+    results = []
+    fp_idx = {}
+    for batch, i in tqdm.tqdm(enumerate(range(0, len(fps), batch_size))):
+        j = min(i + batch_size, len(fps))
+        fps_slice = fps[i:j]
+        peaks_slice = list(set(fp_to_peak[i] for i in fps_slice))
+        peak_to_seq_idx = {val: ind for ind, val in enumerate(peaks_slice)}
+        fp_to_seq_slice = get_fp_to_seq_slice(fps_slice, fp_to_peak, peak_to_seq_idx)
+
+        if model_class == "prof_trans":
+            seqs, profs_trans, profiles = input_func(peaks_slice)
+            profs_trans = profs_trans[:, :num_tasks]
+            profs_ctrls = profiles[:, num_tasks:]
+            seqs_abl = get_ablated_inputs(fps_slice, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, masks, num_runs, profs_trans=profs_trans)
+            profs_preds_logits, counts_preds, run_model(model_path, seqs_abl, profs_ctrls, fps, model_args_extras=model_args_extras, profs_trans=profs_trans)
+        else:
+            seqs, profs_trans, profiles = input_func(peaks_slice)
+            profs_ctrls = profiles[:, num_tasks:]
+            seqs_abl = get_ablated_inputs(fps_slice, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, masks, num_runs)
+            profs_preds_logits, counts_preds, run_model(model_path, seqs_abl, profs_ctrls, fps, model_args_extras=model_args_extras)
+
+        metrics = get_metrics(profs_preds_logits, counts_preds, num_runs)
+        result_b = {
+            "footprints": fps_slice,
+            "peaks": [fp_to_peak[i] for i in fps_slice],
+            "metrics": metrics,
+        }
+        results.append(result_b)
+
+        for ind, val in enumerate(fps_slice):
+            fp_idx[val] = (batch, ind)
+
+        export = {"results": results, "index": fp_idx}
+
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        with open(out_path, "wb") as out_file:
+            pickle.dump(export, out_file)
+
+if __name__ == "__main__":
+    # main()
+
+    model_type = "prof_trans"
+    reference_fasta = "/users/amtseng/genomes/hg38.fasta"
     
 
+    models_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_v5/"
+    hdf5_dir = "/mnt/lab_data2/atwang/att_priors/data/processed/ENCODE_DNase/profile/labels"
+    peak_bed_dir = "/mnt/lab_data2/amtseng/share/austin/dnase"
+    fp_bed_dir = "/users/amtseng/att_priors/data/raw/DNase_footprints/footprints_per_sample/"
+    out_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/ablation/transfer_v5/"
 
-def ablate(seqs, seq_coords, fp_coords, fp_map, num_runs, center_size_to_use=None):
-    seqs_ablated = []
-    for seq, seq_coord, fp_coord in zip(seqs, seq_coords, fp_coords):
-        chrom_s, start_s, end_s = seq_coord
-        chrom_f, start_f, end_f = fp_coord
-        assert chrom_s == chrom_f
+    cell_types = {
+        "K562": ["ENCSR000EOT"],
+        "HepG2": ["ENCSR149XIL"]
+    }
+    fp_beds = {
+        "K562": ["K562-DS15363.bed.gz", "K562-DS16924.bed.gz"],
+        "HepG2": ["h.HepG2-DS24838.bed.gz", "h.HepG2-DS7764.bed.gz"]
+    }
 
-        if center_size_to_use is not None:
-            center = int(0.5 * (start_s + end_s))
-            half_size = int(0.5 * center_size_to_use)
-            start_s = center - half_size
-            end_s = center + center_size_to_use - half_size
+    run_id = "1"
 
-        start_rel = max(start_f - start_s, 0)
-        end_rel = min(end_f - end_s, center_size_to_use)
-        fp_len = end_rel - start_rel
+    for i, i_ex in cell_types.items():
+        for j, j_ex in cell_types.items():
+            if i == j:
+                continue
 
-        fps_all = fp_map[tuple(seq_coord)]
+            metrics_path = os.path.join(models_dir, run_id, "metrics.json")
+            with open(metrics_path, "r") as f:
+                metrics = json.load(f)
 
+            best_epoch = metrics[f"{i}_from_{j}_best_epoch"]["values"][0]
+            model_path = os.path.join(models_dir, f"{i}_from_{j}_{run_id}", f"model_ckpt_epoch_{best_epoch}.pt")
+
+            files_spec = {
+                "profile_hdf5": os.path.join(hdf5_dir, f"{i}/{i}_profiles.h5"),
+                "profile_trans_hdf5": os.path.join(hdf5_dir, f"{j}/{j}_profiles.h5"),
+                "peak_beds": [os.path.join(peak_bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in i_ex]
+                "footprint_beds": [os.path.join(fp_bed_dir, fex) for fex in fp_beds[i]]
+            }
+            out_path = os.path.join(out_dir, f"{i}_from_{j}_shap.h5")
+
+            extras = {
+                "prof_trans_conv_kernel_size": 15,
+                "prof_trans_conv_channels": [5],
+            }
+
+            main(files_spec, model_path, reference_fasta, model_class, out_path, model_args_extras=extras)
