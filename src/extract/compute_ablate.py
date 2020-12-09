@@ -22,7 +22,7 @@ ablate_ex = sacred.Experiment("motif_ablation", ingredients=[
     profile_performance.performance_ex
 ])
 ablate_ex.observers.append(
-    sacred.observers.FileStorageObserver.create(MODEL_DIR)
+    sacred.observers.FileStorageObserver.create(OUT_DIR)
 )
 
 def hide_stdout():
