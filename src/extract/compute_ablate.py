@@ -261,7 +261,7 @@ def main(files_spec, model_path, reference_fasta, model_class, out_path, num_run
 if __name__ == "__main__":
     # main()
 
-    model_clas = "prof_trans"
+    model_class = "prof_trans"
     reference_fasta = "/users/amtseng/genomes/hg38.fasta"
     
 
