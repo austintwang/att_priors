@@ -202,6 +202,7 @@ def get_metrics(profs_preds_logits, counts_preds, num_runs):
 
 @ablate_ex.capture
 def main(files_spec, model_path, reference_fasta, model_class, out_path, num_runs, chrom_set, num_tasks, model_args_extras=None):
+    "Loading footprints.."
     peaks, peak_to_fp_prof, peak_to_fp_reg = data_loading.get_profile_footprint_coords(files_spec, prof_size=prof_size, region_size=center_size_to_use, chrom_set=chrom_set)
     masks = {k: create_mask(k, v) for k, v in peak_to_fp_reg}
     fp_to_peak = get_fp_to_peak(peak_to_fp_prof)
@@ -295,7 +296,7 @@ if __name__ == "__main__":
             files_spec = {
                 "profile_hdf5": os.path.join(hdf5_dir, f"{i}/{i}_profiles.h5"),
                 "profile_trans_hdf5": os.path.join(hdf5_dir, f"{j}/{j}_profiles.h5"),
-                "peak_beds": [os.path.join(peak_bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in i_ex]
+                "peak_beds": [os.path.join(peak_bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in i_ex],
                 "footprint_beds": [os.path.join(fp_bed_dir, fex) for fex in fp_beds[i]]
             }
             out_path = os.path.join(out_dir, f"{i}_from_{j}_shap.h5")
