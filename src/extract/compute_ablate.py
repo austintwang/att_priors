@@ -201,8 +201,8 @@ def get_metrics(profs_preds_logits, counts_preds, num_runs):
 
     return metrics
 
-@ablate_ex.capture
-def main(files_spec, model_path, reference_fasta, model_class, out_path, num_runs, chrom_set, num_tasks, model_args_extras=None):
+@ablate_ex.command
+def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs, chrom_set, num_tasks, model_args_extras=None):
     "Loading footprints.."
     peaks, peak_to_fp_prof, peak_to_fp_reg = data_loading.get_profile_footprint_coords(files_spec, prof_size=prof_size, region_size=center_size_to_use, chrom_set=chrom_set)
     masks = {k: create_mask(k, v) for k, v in peak_to_fp_reg}
@@ -258,7 +258,8 @@ def main(files_spec, model_path, reference_fasta, model_class, out_path, num_run
         with open(out_path, "wb") as out_file:
             pickle.dump(export, out_file)
 
-if __name__ == "__main__":
+@ablate_ex.automain
+def main():
     # main()
 
     model_class = "prof_trans"
@@ -307,4 +308,4 @@ if __name__ == "__main__":
                 "prof_trans_conv_channels": [5],
             }
 
-            main(files_spec, model_path, reference_fasta, model_class, out_path, model_args_extras=extras)
+            run(files_spec, model_path, reference_fasta, model_class, out_path, model_args_extras=extras)
