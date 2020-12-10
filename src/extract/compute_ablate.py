@@ -176,12 +176,12 @@ def run_model(model_path, seqs, profs_ctrls, fps, gpu_id, model_args_extras=None
     counts_preds_shape = (profs_ctrls.shape[0], seqs.shape[1], profs_ctrls.shape[1], profs_ctrls.shape[3])
     counts_preds = np.empty(counts_preds_shape)
 
-    profs_ctrls_b = util.place_tensor(torch.tensor(profs_ctrls), index=gpu_id).float() 
+    profs_ctrls_b = place_tensor(torch.tensor(profs_ctrls), index=gpu_id).float() 
     if profs_trans is not None:
-        profs_trans_b = util.place_tensor(torch.tensor(profs_trans), index=gpu_id).float()
+        profs_trans_b = place_tensor(torch.tensor(profs_trans), index=gpu_id).float()
 
     for run in range(seqs.shape[1]):
-        seqs_b = util.place_tensor(torch.tensor(seqs[:,run]), index=gpu_id).float() 
+        seqs_b = place_tensor(torch.tensor(seqs[:,run]), index=gpu_id).float() 
         if profs_trans is not None:
             profs_preds_logits_b, counts_preds_b = model(seqs_b, profs_ctrls_b, profs_trans_b)
         else:
