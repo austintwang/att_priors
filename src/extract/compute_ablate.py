@@ -166,7 +166,7 @@ def run_model(model_path, seqs, profs_ctrls, fps, gpu_id, model_args_extras=None
         model_class = profile_models.ProfilePredictorTransfer
     else:
         model_class = profile_models.ProfilePredictorWithMatchedControls
-    model = model_util.restore_model(model_class, model_path, model_args_extras=model_args_extras)
+    model = model.util.restore_model(model_class, model_path, model_args_extras=model_args_extras)
     model.eval()
     model = model.to(device)
 
