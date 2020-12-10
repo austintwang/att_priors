@@ -527,7 +527,7 @@ def total_count_corr_mse(log_true_total_counts, log_pred_total_counts):
 
 @performance_ex.capture
 def compute_performance_metrics(
-    true_profs, log_pred_profs, true_counts, log_pred_counts, print_updates=True
+    true_profs, log_pred_profs, true_counts, log_pred_counts, print_updates=True, calc_counts=True
 ):
     """
     Computes some evaluation metrics on a set of positive examples, given the
@@ -620,30 +620,36 @@ def compute_performance_metrics(
         end = datetime.now()
         print("%ds" % (end - start).seconds)
 
-    if print_updates:
-        print("\t\tComputing count correlations/MSE... ", end="", flush=True)
-        start = datetime.now()
-    # Total count correlations/MSE
-    log_true_counts = np.log(true_counts + 1)
-    pears_tot, spear_tot, mse_tot = total_count_corr_mse(
-        log_true_counts, log_pred_counts
-    )
-    if print_updates:
-        end = datetime.now()
-        print("%ds" % (end - start).seconds)
-
-    return {
+    metrics = {
         "nll": nll,
         "jsd": jsd,
         "auprc_binned": auprc,
         "pearson_binned": pears_bin,
         "spearman_binned": spear_bin,
         "mse_binned": mse_bin,
-        "pearson_total": pears_tot,
-        "spearman_total": spear_tot,
-        "mse_total": mse_tot
     }
 
+    if calc_counts:
+        if print_updates:
+            print("\t\tComputing count correlations/MSE... ", end="", flush=True)
+            start = datetime.now()
+        # Total count correlations/MSE
+        log_true_counts = np.log(true_counts + 1)
+        pears_tot, spear_tot, mse_tot = total_count_corr_mse(
+            log_true_counts, log_pred_counts
+        )
+        if print_updates:
+            end = datetime.now()
+            print("%ds" % (end - start).seconds)
+
+        metrics_counts = {
+            "pearson_total": pears_tot,
+            "spearman_total": spear_tot,
+            "mse_total": mse_tot
+        }
+        metrics.update(metrics_counts)
+
+    return metrics
 
 @performance_ex.capture
 def log_performance_metrics(
