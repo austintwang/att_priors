@@ -152,7 +152,7 @@ def get_ablated_inputs(fps_in, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, s
             profs_trans_out.append(profs_trans)
 
     if prof_trans is not None:
-        return np.stack(seqs_out), np.stack(prof_ctrls), np.stack(prof_trans)
+        return np.stack(seqs_out), np.stack(profs_ctrls_out), np.stack(profs_trans_out)
     return np.stack(seqs_out), np.stack(prof_ctrls)
         
 @ablate_ex.capture
