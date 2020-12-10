@@ -45,6 +45,7 @@ def config():
 @ablate_ex.capture
 def create_mask(fp_coords, peak_coord, center_size_to_use):
     print(peak_coord) ####
+    print(fp_coords) ####
     chrom_s, start_s, end_s = peak_coord
     if center_size_to_use is not None:
         center = int(0.5 * (start_s + end_s))
