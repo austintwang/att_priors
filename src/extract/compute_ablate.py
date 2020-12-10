@@ -245,7 +245,7 @@ def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs
             profs_trans = profs_trans[:, :num_tasks]
             profs_ctrls = profiles[:, num_tasks:]
             print(profs_trans.shape) ####
-            print(profiles.shape) ####
+            print(profs_ctrls.shape) ####
             seqs_in, profs_ctrls_in, profs_trans_in = get_ablated_inputs(fps_slice, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, masks, num_runs, profs_trans=profs_trans)
             profs_preds_logits, counts_preds = run_model(model_path, seqs_in, profs_ctrls_in, fps, model_args_extras=model_args_extras, profs_trans=profs_trans_in)
         else:
