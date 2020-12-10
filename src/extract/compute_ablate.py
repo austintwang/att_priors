@@ -125,7 +125,7 @@ def get_ablated_inputs(fps_in, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, s
         fps.append(fp)
 
         seq_slice = fp_to_seq_slice[fp]
-        print(seq_slice) ####
+        # print(seq_slice) ####
         seq_idx, start, end = seq_slice
         fp_len = end - start + 1
 
@@ -140,7 +140,7 @@ def get_ablated_inputs(fps_in, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, s
         for run_num, interval_choice in enumerate(choices_1):
             slc_start = np.random.randint(mask_lens_allowed[interval_choice]) + mask_starts[interval_choice]
             slc_end = slc_start + fp_len
-            # print(slc_start, slc_end) ####
+            print(slc_start, slc_end) ####
             seq_runs[run_num+1, start:end+1, :] = seq[slc_start:slc_end, :]
         
         seqs_out.append(seq_runs)
