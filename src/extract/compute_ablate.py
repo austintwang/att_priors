@@ -204,7 +204,7 @@ def get_metrics(profs_preds_logits, counts_preds, num_runs):
     profs_preds_o = np.exp(profs_preds_logs_o) * counts_preds_o
     metrics = {}
     for i in range(1, num_runs + 1):
-        profs_pred_slogs_a = profs_preds_logs[:,i]
+        profs_preds_logs_a = profs_preds_logs[:,i]
         counts_preds_a = counts_preds[:,i]
         metrics_run = profile_performance.compute_performance_metrics(profs_preds_o, profs_pred_logs_a, counts_preds_o, counts_preds_a)
         for k, v in metrics_run.items():
