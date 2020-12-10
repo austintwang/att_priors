@@ -130,7 +130,7 @@ def make_shap_scores(
             scores = explainer(input_seqs, hide_shap_output=True)
         elif model_type == "prof_trans":
             coords = pos_samples[batch_slice]
-            input_seqs, prof_trans, profiles = input_func(coords)
+            input_seqs, profiles, prof_trans = input_func(coords)
             scores = explainer(
                 input_seqs, prof_trans[:, :num_tasks], profiles[:, num_tasks:], hide_shap_output=True
             ) 
