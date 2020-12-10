@@ -233,7 +233,7 @@ def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs
         fps_slice = fps[i:j]
         peaks_slice = list(set(fp_to_peak[i] for i in fps_slice))
         peak_to_seq_idx = {val: ind for ind, val in enumerate(peaks_slice)}
-        fp_to_seq_slice = get_fp_to_seq_slice(fps_slice, fp_to_peak, peak_to_seq_idx)
+        fp_to_seq_slice = get_fp_to_seq_slice(fps_slice, fp_to_peak, peak_to_seq_idx, center_size_to_use)
 
         if model_class == "prof_trans":
             seqs, profs_trans, profiles = input_func(peaks_slice)
