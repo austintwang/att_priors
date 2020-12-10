@@ -201,7 +201,7 @@ def get_metrics(profs_preds_logits, counts_preds, num_runs):
     profs_preds_logs = profs_preds_logits - scipy.special.logsumexp(profs_preds_logits, axis=3, keepdims=True)
     profs_preds_logs_o = profs_preds_logs[:,0]
     counts_preds_o = counts_preds[:,0]
-    profs_preds_o = np.exp(profs_preds_logs_o) * counts_preds_o
+    profs_preds_o = np.exp(profs_preds_logs_o) * np.broadcast_to(counts_preds_o, profs_preds_logs_o.shape())
     print(profs_preds_logs_o.shape) ####
     print(counts_preds_o.shape) ####
     print(profs_preds_o.shape) ####
@@ -271,11 +271,11 @@ def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs
         for ind, val in enumerate(fps_slice):
             fp_idx[val] = (batch, ind)
 
-        export = {"results": results, "index": fp_idx}
+    export = {"results": results, "index": fp_idx}
 
-        os.makedirs(os.path.dirname(out_path), exist_ok=True)
-        with open(out_path, "wb") as out_file:
-            pickle.dump(export, out_file)
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, "wb") as out_file:
+        pickle.dump(export, out_file)
 
 @ablate_ex.automain
 def main():
