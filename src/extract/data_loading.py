@@ -223,7 +223,7 @@ def get_profile_footprint_coords(files_spec_path, task_ind=None, footprint_ind=N
             center = (0.5 * (starts + ends)).astype(int)
             half_size = int(0.5 * prof_size)
             prof_starts = center - half_size
-            prof_ends = prof_starts + size
+            prof_ends = center + prof_size - half_size
 
         if region_size is None:
             region_starts = starts
@@ -232,7 +232,7 @@ def get_profile_footprint_coords(files_spec_path, task_ind=None, footprint_ind=N
             center = (0.5 * (starts + ends)).astype(int)
             half_size = int(0.5 * region_size)
             region_starts = center - half_size
-            region_ends = region_starts + size
+            region_ends = center + region_size - half_size
 
         data = (chroms, starts, ends, prof_starts, prof_ends, region_starts, region_ends)
         for chrom, start, end, prof_start, prof_end, region_start, region_end in zip(*data):
