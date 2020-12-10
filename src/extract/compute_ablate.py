@@ -133,6 +133,8 @@ def get_ablated_inputs(fps_in, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, s
         seq_runs = np.broadcast_to(seq, (num_runs+1, seq.shape[0], seq.shape[1])).copy()
 
         mask_starts, mask_lens = seq_masks[fp_to_peak[fp]]
+        print(mask_starts) ####
+        print(mask_lens) ####
         mask_lens_allowed = np.clip(mask_lens - fp_len + 1, 0, None)
         mask_probs = mask_lens_allowed / sum(mask_lens_allowed)
         
