@@ -1,4 +1,4 @@
-from model.util import place_tensor
+from model.util import place_tensor, restore_model
 import model.profile_models as profile_models
 import feature.make_profile_dataset as make_profile_dataset
 import model.profile_performance as profile_performance
@@ -166,7 +166,7 @@ def run_model(model_path, seqs, profs_ctrls, fps, gpu_id, model_args_extras=None
         model_class = profile_models.ProfilePredictorTransfer
     else:
         model_class = profile_models.ProfilePredictorWithMatchedControls
-    model = model.util.restore_model(model_class, model_path, model_args_extras=model_args_extras)
+    model = restore_model(model_class, model_path, model_args_extras=model_args_extras)
     model.eval()
     model = model.to(device)
 
