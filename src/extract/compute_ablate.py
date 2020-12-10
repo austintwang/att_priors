@@ -10,6 +10,7 @@ import sys
 import tqdm
 import sacred
 import json
+import scipy.special
 
 # GPU = "4"
 # place_tensor = lambda x: place_tensor_util(x, index=GPU)
