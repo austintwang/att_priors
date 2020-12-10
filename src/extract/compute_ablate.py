@@ -198,7 +198,7 @@ def run_model(model_path, seqs, profs_ctrls, fps, gpu_id, model_args_extras=None
 
 @ablate_ex.capture
 def get_metrics(profs_preds_logits, counts_preds, num_runs):
-    profs_pred_logs = profs_preds_logits - scipy.special.logsumexp(profs_preds_logits, axis=3, keepdims=True)
+    profs_preds_logs = profs_preds_logits - scipy.special.logsumexp(profs_preds_logits, axis=3, keepdims=True)
     profs_preds_logs_o = profs_preds_logs[:,0]
     counts_preds_o = counts_preds[:,0]
     profs_preds_o = np.exp(profs_preds_logs_o) * counts_preds_o
