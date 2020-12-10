@@ -104,11 +104,11 @@ def get_fp_to_seq_slice(fps, fp_to_peak, peak_to_seq_idx, center_size_to_use):
             center = int(0.5 * (start_s + end_s))
             half_size = int(0.5 * center_size_to_use)
             start_s = center - half_size
-            end_s = center + center_size_to_use - half_size
+            # end_s = center + center_size_to_use - half_size
 
         chrom_f, start_f, end_f = fp
         start_rel = max(start_f - start_s, 0)
-        end_rel = min(end_f - end_s, center_size_to_use)
+        end_rel = min(end_f - start_s, center_size_to_use)
 
         seq_idx = peak_to_seq_idx[peak]
         fp_to_seq_slice[fp] = (seq_idx, start_rel, end_rel)
