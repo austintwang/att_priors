@@ -120,10 +120,7 @@ def get_ablated_inputs(fps_in, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, s
     seqs_out = []
     profs_ctrls_out = []
     profs_trans_out = []
-    fps = []
     for fp in fps_in:
-        fps.append(fp)
-
         seq_slice = fp_to_seq_slice[fp]
         # print(seq_slice) ####
         seq_idx, start, end = seq_slice
@@ -155,8 +152,8 @@ def get_ablated_inputs(fps_in, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, s
             profs_trans_out.append(profs_trans)
 
     if prof_trans is not None:
-        return fps, np.stack(seqs_out), np.stack(prof_ctrls), np.stack(prof_trans)
-    return fps, np.stack(seqs_out), np.stack(prof_ctrls)
+        return np.stack(seqs_out), np.stack(prof_ctrls), np.stack(prof_trans)
+    return np.stack(seqs_out), np.stack(prof_ctrls)
         
 @ablate_ex.capture
 def run_model(model_path, seqs, profs_ctrls, fps, gpu_id, model_args_extras=None, profs_trans=None):
@@ -244,13 +241,13 @@ def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs
             seqs, profs_trans, profiles = input_func(peaks_slice)
             profs_trans = profs_trans[:, :num_tasks]
             profs_ctrls = profiles[:, num_tasks:]
-            seqs_abl = get_ablated_inputs(fps_slice, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, masks, num_runs, profs_trans=profs_trans)
-            profs_preds_logits, counts_preds = run_model(model_path, seqs_abl, profs_ctrls, fps, model_args_extras=model_args_extras, profs_trans=profs_trans)
+            seqs_in, profs_ctrls_in, profs_trans_in = get_ablated_inputs(fps_slice, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, masks, num_runs, profs_trans=profs_trans)
+            profs_preds_logits, counts_preds = run_model(model_path, seqs_in, profs_ctrls_in, fps, model_args_extras=model_args_extras, profs_trans=profs_trans_in)
         else:
             seqs, profs_trans, profiles = input_func(peaks_slice)
             profs_ctrls = profiles[:, num_tasks:]
-            seqs_abl = get_ablated_inputs(fps_slice, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, masks, num_runs)
-            profs_preds_logits, counts_preds = run_model(model_path, seqs_abl, profs_ctrls, fps, model_args_extras=model_args_extras)
+            seqs_in, profs_ctrls_in = get_ablated_inputs(fps_slice, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, masks, num_runs)
+            profs_preds_logits, counts_preds = run_model(model_path, seqs_in, profs_ctrls_in, fps, model_args_extras=model_args_extras)
 
         metrics = get_metrics(profs_preds_logits, counts_preds, num_runs)
         result_b = {
