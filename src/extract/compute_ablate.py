@@ -242,6 +242,8 @@ def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs
 
         if model_class == "prof_trans":
             seqs, profs_trans, profiles = input_func(peaks_slice)
+            print(profs_trans.shape) ####
+            print(profiles.shape) ####
             profs_trans = profs_trans[:, :num_tasks]
             profs_ctrls = profiles[:, num_tasks:]
             seqs_in, profs_ctrls_in, profs_trans_in = get_ablated_inputs(fps_slice, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, masks, num_runs, profs_trans=profs_trans)
