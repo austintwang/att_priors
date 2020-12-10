@@ -55,12 +55,12 @@ def create_mask(peak_coord, fp_coords, center_size_to_use):
 
     starts_mask = []
     ends_mask = []
-    prev_end = 0
+    prev_end = -1
     for fp_coord in sorted(fp_coords):
         chrom_f, start_f, end_f = fp_coord
         assert chrom_s == chrom_f ####
         start_rel = max(start_f - start_s, 0)
-        end_rel = min(end_f - end_s, center_size_to_use)
+        end_rel = min(end_f - start_s, center_size_to_use)
         if start_rel > prev_end + 1:
             starts_mask.append(prev_end + 1)
             ends_mask.append(start_rel)
