@@ -202,9 +202,9 @@ def get_profile_footprint_coords(files_spec_path, task_ind=None, footprint_ind=N
         ends = table[2]
         begin_hashes = starts.astype(int) // 1000
         end_hashes = ends.astype(int) // 1000
-        for chrom, start, end, prof_start, prof_end, begin_hash, end_hash in zip(chroms, starts, ends, prof_starts, prof_ends, begin_hashes, end_hashes):
+        for chrom, start, end, begin_hash, end_hash in zip(chroms, starts, ends, begin_hashes, end_hashes):
             for pos_hash in range(begin_hash, end_hash + 1):
-                footprints_query.setdefault((chrom, pos_hash), set()).add((start, end, prof_start, prof_end),)
+                footprints_query.setdefault((chrom, pos_hash), set()).add((start, end),)
 
     peaks = []
     footprints_profile = {}
