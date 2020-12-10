@@ -207,7 +207,7 @@ def get_metrics(profs_preds_logits, counts_preds, num_runs):
     return metrics
 
 @ablate_ex.command
-def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs, chrom_set, num_tasks, prof_size, center_size_to_use, model_args_extras=None):
+def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs, chrom_set, num_tasks, prof_size, center_size_to_use, batch_size, model_args_extras=None):
     print("Loading footprints...")
     peaks, peak_to_fp_prof, peak_to_fp_reg = data_loading.get_profile_footprint_coords(files_spec, prof_size=prof_size, region_size=center_size_to_use, chrom_set=chrom_set)
     masks = {k: create_mask(k, v) for k, v in peak_to_fp_reg.items()}
