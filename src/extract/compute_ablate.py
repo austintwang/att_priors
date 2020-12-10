@@ -168,8 +168,8 @@ def run_model(model_path, seqs, profs_ctrls, fps, gpu_id, model_args_extras=None
     model = model.to(device)
 
     # print(seqs[:5]) ####
-    print(seqs.shape) ####
-    print(profs_ctrls.shape) ####
+    # print(seqs.shape) ####
+    # print(profs_ctrls.shape) ####
     num_runs = seqs.shape[1]
     profs_preds_shape = (profs_ctrls.shape[0], seqs.shape[1], profs_ctrls.shape[1], profs_ctrls.shape[2], profs_ctrls.shape[3])
     profs_preds_logits = np.empty(profs_preds_shape)
