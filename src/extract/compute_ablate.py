@@ -93,6 +93,8 @@ def get_fp_to_peak(peak_to_fps):
             else:
                 fp_to_peak[fp] = peak
 
+    return fp_to_peak
+
 def get_fp_to_seq_slice(fps, fp_to_peak, peak_to_seq_idx, center_size_to_use):
     fp_to_seq_slice = {}
     for fp in fps:
