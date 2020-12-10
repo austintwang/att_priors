@@ -170,6 +170,7 @@ def run_model(model_path, seqs, profs_ctrls, fps, gpu_id, model_args_extras=None
     model.eval()
     model = model.to(device)
 
+    print(seqs[:5]) ####
     num_runs = seqs.shape[1]
     profs_preds_shape = (profs_ctrls.shape[0], seqs.shape[1], profs_ctrls.shape[1], profs_ctrls.shape[2], profs_ctrls.shape[3])
     profs_preds_logits = np.empty(profs_preds_shape)
@@ -311,7 +312,7 @@ def main():
                 "peak_beds": [os.path.join(peak_bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in i_ex],
                 "footprint_beds": [os.path.join(fp_bed_dir, fex) for fex in fp_beds[i]]
             }
-            out_path = os.path.join(out_dir, f"{i}_from_{j}_shap.h5")
+            out_path = os.path.join(out_dir, f"{i}_from_{j}_ablate.pickle")
 
             extras = {
                 "prof_trans_conv_kernel_size": 15,
