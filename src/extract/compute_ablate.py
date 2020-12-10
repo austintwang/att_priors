@@ -274,6 +274,7 @@ def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs
 
     export = {"results": results, "index": fp_idx}
 
+    print(f"Saving to {out_path}")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "wb") as out_file:
         pickle.dump(export, out_file)
