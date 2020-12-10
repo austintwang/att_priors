@@ -129,7 +129,7 @@ def get_ablated_inputs(fps, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, seq_
         fp_len = end - start + 1
 
         seq = seqs[seq_idx,:,:]
-        seq_runs = np.broadcast_to(seq, (num_runs+1, seq.shape[0], seq.shape[1]))
+        seq_runs = np.broadcast_to(seq, (num_runs+1, seq.shape[0], seq.shape[1])).copy()
 
         mask_starts, mask_lens = seq_masks[fp_to_peak[fp]]
         mask_lens_allowed = np.clip(mask_lens - fp_len + 1, 0, None)
