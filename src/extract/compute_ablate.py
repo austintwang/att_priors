@@ -153,7 +153,7 @@ def get_ablated_inputs(fps_in, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, s
 
     if prof_trans is not None:
         return np.stack(seqs_out), np.stack(profs_ctrls_out), np.stack(profs_trans_out)
-    return np.stack(seqs_out), np.stack(prof_ctrls)
+    return np.stack(seqs_out), np.stack(prof_ctrls_out)
         
 @ablate_ex.capture
 def run_model(model_path, seqs, profs_ctrls, fps, gpu_id, model_args_extras=None, profs_trans=None):
@@ -168,8 +168,9 @@ def run_model(model_path, seqs, profs_ctrls, fps, gpu_id, model_args_extras=None
     model = model.to(device)
 
     # print(seqs[:5]) ####
-    # print(seqs.shape) ####
-    # print(profs_ctrls.shape) ####
+    print(seqs.shape) ####
+    print(profs_ctrls.shape) ####
+    print(profs_trans.shape) ####
     num_runs = seqs.shape[1]
     profs_preds_shape = (profs_ctrls.shape[0], seqs.shape[1], profs_ctrls.shape[1], profs_ctrls.shape[2], profs_ctrls.shape[3])
     profs_preds_logits = np.empty(profs_preds_shape)

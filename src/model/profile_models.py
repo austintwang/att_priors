@@ -811,7 +811,7 @@ class ProfilePredictorTransfer(ProfilePredictorWithControlsKwargs):
         profile_length = cont_profs.size(2)
         profile_length_trans = profs_trans.size(2)
         assert profile_length == self.profile_length
-        print(profile_length_trans, self.profile_length) ####
+        # print(profile_length_trans, self.profile_length) ####
         assert profile_length_trans == self.profile_length
         num_strands = cont_profs.size(3)
         assert num_strands == self.num_strands
