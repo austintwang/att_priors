@@ -213,7 +213,7 @@ def get_metrics(profs_preds_logits, counts_preds, num_runs):
         # print(profs_preds_logs_o.shape) ####
         # print(profs_preds_logs_a.shape) ####
         metrics_run = profile_performance.compute_performance_metrics(profs_preds_o, profs_preds_logs_a, counts_preds_o, counts_preds_a, print_updates=False, calc_counts=False)
-        metrics_run["counts_diff"] = counts_pred_a - counts_pred_o
+        metrics_run["counts_diff"] = counts_preds_a - counts_preds_o
         for k, v in metrics_run.items():
             metrics.setdefault(k, []).append(v)
 
