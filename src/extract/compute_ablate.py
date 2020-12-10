@@ -19,8 +19,8 @@ import pickle
 DEVNULL = open(os.devnull, "w")
 STDOUT = sys.stdout
 
-# OUT_DIR = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/ablation/transfer_v5/"
-OUT_DIR = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/ablation/test/"
+OUT_DIR = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/ablation/transfer_v5/"
+# OUT_DIR = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/ablation/test/"
 
 ablate_ex = sacred.Experiment("motif_ablation", ingredients=[
     profile_performance.performance_ex
@@ -241,7 +241,7 @@ def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs
     print("Computing metrics...")
     results = []
     fp_idx = {}
-    fps = fps[:100] ####
+    # fps = fps[:100] ####
     for batch, i in enumerate(tqdm.tqdm(range(0, len(fps), batch_size))):
         j = min(i + batch_size, len(fps))
         fps_slice = fps[i:j]
@@ -275,7 +275,7 @@ def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs
             fp_idx[val] = (batch, ind)
 
     export = {"results": results, "index": fp_idx}
-    print(export) ####
+    # print(export) ####
 
     print(f"Saving to {out_path}")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
