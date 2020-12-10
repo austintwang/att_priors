@@ -294,7 +294,7 @@ def main():
     hdf5_dir = "/mnt/lab_data2/atwang/att_priors/data/processed/ENCODE_DNase/profile/labels"
     peak_bed_dir = "/mnt/lab_data2/amtseng/share/austin/dnase"
     fp_bed_dir = "/users/amtseng/att_priors/data/raw/DNase_footprints/footprints_per_sample/"
-    out_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/ablation/transfer_v5/"
+    out_dir = OUT_DIR
 
     cell_types = {
         "K562": ["ENCSR000EOT"],
