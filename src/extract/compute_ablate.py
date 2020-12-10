@@ -38,7 +38,7 @@ def config():
     center_size_to_use = 2114
     prof_size = 1000
     num_runs = 5
-    batch_size = 128 
+    batch_size = 1024 
     gpu_id = "4"
     num_tasks = 1
     chrom_set = [f"chr{i}" for i in range(1, 23)] + ["chrX"]
