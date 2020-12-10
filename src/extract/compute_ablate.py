@@ -133,8 +133,8 @@ def get_ablated_inputs(fps_in, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, s
         seq_runs = np.broadcast_to(seq, (num_runs+1, seq.shape[0], seq.shape[1])).copy()
 
         mask_starts, mask_lens = seq_masks[fp_to_peak[fp]]
-        print(mask_starts) ####
-        print(mask_lens) ####
+        # print(mask_starts) ####
+        # print(mask_lens) ####
         mask_lens_allowed = np.clip(mask_lens - fp_len + 1, 0, None)
         mask_probs = mask_lens_allowed / sum(mask_lens_allowed)
         
@@ -142,7 +142,7 @@ def get_ablated_inputs(fps_in, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, s
         for run_num, interval_choice in enumerate(choices_1):
             slc_start = np.random.randint(mask_lens_allowed[interval_choice]) + mask_starts[interval_choice]
             slc_end = slc_start + fp_len
-            print(slc_start, slc_end) ####
+            # print(slc_start, slc_end) ####
             seq_runs[run_num+1, start:end+1, :] = seq[slc_start:slc_end, :]
         
         seqs_out.append(seq_runs)
@@ -244,12 +244,12 @@ def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs
             profs_trans = profs_trans[:, :num_tasks]
             profs_ctrls = profiles[:, num_tasks:]
             seqs_abl = get_ablated_inputs(fps_slice, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, masks, num_runs, profs_trans=profs_trans)
-            profs_preds_logits, counts_preds, run_model(model_path, seqs_abl, profs_ctrls, fps, model_args_extras=model_args_extras, profs_trans=profs_trans)
+            profs_preds_logits, counts_preds = run_model(model_path, seqs_abl, profs_ctrls, fps, model_args_extras=model_args_extras, profs_trans=profs_trans)
         else:
             seqs, profs_trans, profiles = input_func(peaks_slice)
             profs_ctrls = profiles[:, num_tasks:]
             seqs_abl = get_ablated_inputs(fps_slice, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, masks, num_runs)
-            profs_preds_logits, counts_preds, run_model(model_path, seqs_abl, profs_ctrls, fps, model_args_extras=model_args_extras)
+            profs_preds_logits, counts_preds = run_model(model_path, seqs_abl, profs_ctrls, fps, model_args_extras=model_args_extras)
 
         metrics = get_metrics(profs_preds_logits, counts_preds, num_runs)
         result_b = {
