@@ -17,7 +17,8 @@ import json
 DEVNULL = open(os.devnull, "w")
 STDOUT = sys.stdout
 
-OUT_DIR = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/ablation/transfer_v5/"
+# OUT_DIR = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/ablation/transfer_v5/"
+OUT_DIR = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/ablation/test/"
 
 ablate_ex = sacred.Experiment("motif_ablation", ingredients=[
     profile_performance.performance_ex
@@ -203,9 +204,9 @@ def get_metrics(profs_preds_logits, counts_preds, num_runs):
 
 @ablate_ex.command
 def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs, chrom_set, num_tasks, prof_size, center_size_to_use, model_args_extras=None):
-    "Loading footprints.."
+    print("Loading footprints...")
     peaks, peak_to_fp_prof, peak_to_fp_reg = data_loading.get_profile_footprint_coords(files_spec, prof_size=prof_size, region_size=center_size_to_use, chrom_set=chrom_set)
-    masks = {k: create_mask(k, v) for k, v in peak_to_fp_reg}
+    masks = {k: create_mask(k, v) for k, v in peak_to_fp_reg.items()}
     fp_to_peak = get_fp_to_peak(peak_to_fp_prof)
     fps = list(fp_to_peak.keys())
     # peak_to_seq_idx = {val: ind for ind, val in enumerate(peaks)}
@@ -220,6 +221,7 @@ def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs
             files_spec, center_size_to_use, prof_size, reference_fasta,
         )
 
+    print("Computing metrics...")
     results = []
     fp_idx = {}
     for batch, i in tqdm.tqdm(enumerate(range(0, len(fps), batch_size))):
