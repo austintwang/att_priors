@@ -43,6 +43,7 @@ def config():
     gpu_id = "4"
     num_tasks = 1
     chrom_set = [f"chr{i}" for i in range(1, 23)] + ["chrX"]
+    epsilon = 1e-9
 
 @ablate_ex.capture
 def create_mask(peak_coord, fp_coords, center_size_to_use):
@@ -135,7 +136,12 @@ def get_ablated_inputs(fps_in, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, s
         # print(mask_starts) ####
         # print(mask_lens) ####
         mask_lens_allowed = np.clip(mask_lens - fp_len + 1, 0, None)
-        mask_probs = mask_lens_allowed / sum(mask_lens_allowed)
+        mask_lens_allowed_sum = np.sum(mask_lens_allowed)
+        if mask_lens_allowed_sum > 0:
+            mask_probs = mask_lens_allowed / mask_lens_allowed_sum
+        else:
+            mask_lens_allowed = np.ones_like(mask_lens_allowed)
+            mask_probs = mask_lens_allowed / np.size(mask_lens_allowed)
         
         choices_1 = np.random.choice(len(mask_lens_allowed), size=num_runs, p=mask_probs)
         for run_num, interval_choice in enumerate(choices_1):
