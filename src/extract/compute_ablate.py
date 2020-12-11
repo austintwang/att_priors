@@ -20,7 +20,10 @@ import traceback
 DEVNULL = open(os.devnull, "w")
 STDOUT = sys.stdout
 
-OUT_DIR = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/ablation/transfer_v5/"
+# RUN_ID = "transfer_v5"
+RUN_ID = "baseline_v2"
+
+OUT_DIR = f"/mnt/lab_data2/atwang/models/domain_adapt/dnase/ablation/{RUN_ID}/"
 # OUT_DIR = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/ablation/test/"
 
 ablate_ex = sacred.Experiment("motif_ablation", ingredients=[
@@ -346,4 +349,27 @@ def main():
                 "prof_trans_conv_channels": [5],
             }
 
-            run(files_spec, model_path, reference_fasta, model_class, out_path, model_args_extras=extras)
+            # run(files_spec, model_path, reference_fasta, model_class, out_path, model_args_extras=extras)
+
+    model_class = "profile"
+    models_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/baseline_v2/"
+    run_id = "1"
+
+    for i, i_ex in cell_types.items():
+        metrics_path = os.path.join(models_dir, run_id, "metrics.json")
+        with open(metrics_path, "r") as f:
+            metrics = json.load(f)
+
+        best_epoch = metrics[f"{i}_dnase_base_best_epoch"]["values"][0]
+        if best_epoch is None:
+            best_epoch = np.argmin(metrics[f"{i}_dnase_base_val_epoch_loss"]["values"])
+        model_path = os.path.join(models_dir, f"{i}_dnase_base_{run_id}", f"model_ckpt_epoch_{best_epoch}.pt")
+
+        files_spec_path = {
+            "profile_hdf5": os.path.join(hdf5_dir, f"{i}/{i}_profiles.h5"),
+            "peak_beds": [os.path.join(bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in i_ex],
+            "footprint_beds": [os.path.join(fp_bed_dir, fex) for fex in fp_beds[i]]
+        }
+        out_path = os.path.join(out_dir, f"{i}_base_ablate.pickle")
+
+        run(files_spec, model_path, reference_fasta, model_class, out_path)
