@@ -367,7 +367,7 @@ def main():
 
         files_spec_path = {
             "profile_hdf5": os.path.join(hdf5_dir, f"{i}/{i}_profiles.h5"),
-            "peak_beds": [os.path.join(bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in i_ex],
+            "peak_beds": [os.path.join(peak_bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in i_ex],
             "footprint_beds": [os.path.join(fp_bed_dir, fex) for fex in fp_beds[i]]
         }
         out_path = os.path.join(out_dir, f"{i}_base_ablate.pickle")
