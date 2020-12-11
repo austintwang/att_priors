@@ -143,7 +143,7 @@ def get_ablated_inputs(fps_in, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, s
         else:
             mask_lens_allowed = np.ones_like(mask_lens_allowed)
             mask_probs = mask_lens_allowed / np.size(mask_lens_allowed)
-        print(mask_probs) ####
+        # print(mask_probs) ####
         
         choices_1 = np.random.choice(len(mask_lens_allowed), size=num_runs, p=mask_probs)
         for run_num, interval_choice in enumerate(choices_1):
