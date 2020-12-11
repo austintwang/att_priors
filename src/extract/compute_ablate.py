@@ -12,6 +12,7 @@ import sacred
 import json
 import scipy.special
 import pickle
+import traceback
 
 # GPU = "4"
 # place_tensor = lambda x: place_tensor_util(x, index=GPU)
@@ -250,38 +251,42 @@ def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs
     fp_idx = {}
     # fps = fps[:100] ####
     for batch, i in enumerate(tqdm.tqdm(range(0, len(fps), batch_size))):
-        if batch < 680: ####
-            continue
-        j = min(i + batch_size, len(fps))
-        fps_slice = fps[i:j]
-        peaks_slice = list(set(fp_to_peak[i] for i in fps_slice))
-        peak_to_seq_idx = {val: ind for ind, val in enumerate(peaks_slice)}
-        fp_to_seq_slice = get_fp_to_seq_slice(fps_slice, fp_to_peak, peak_to_seq_idx, center_size_to_use)
+        # if batch < 680: ####
+        #     continue
+        try:
+            j = min(i + batch_size, len(fps))
+            fps_slice = fps[i:j]
+            peaks_slice = list(set(fp_to_peak[i] for i in fps_slice))
+            peak_to_seq_idx = {val: ind for ind, val in enumerate(peaks_slice)}
+            fp_to_seq_slice = get_fp_to_seq_slice(fps_slice, fp_to_peak, peak_to_seq_idx, center_size_to_use)
 
-        if model_class == "prof_trans":
-            seqs, profiles, profs_trans = input_func(peaks_slice)
-            profs_trans = profs_trans[:, :num_tasks]
-            profs_ctrls = profiles[:, num_tasks:]
-            # print(profs_trans.shape) ####
-            # print(profs_ctrls.shape) ####
-            seqs_in, profs_ctrls_in, profs_trans_in = get_ablated_inputs(fps_slice, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, masks, num_runs, profs_trans=profs_trans)
-            profs_preds_logits, counts_preds = run_model(model_path, seqs_in, profs_ctrls_in, fps, model_args_extras=model_args_extras, profs_trans=profs_trans_in)
-        else:
-            seqs, profiles = input_func(peaks_slice)
-            profs_ctrls = profiles[:, num_tasks:]
-            seqs_in, profs_ctrls_in = get_ablated_inputs(fps_slice, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, masks, num_runs)
-            profs_preds_logits, counts_preds = run_model(model_path, seqs_in, profs_ctrls_in, fps, model_args_extras=model_args_extras)
+            if model_class == "prof_trans":
+                seqs, profiles, profs_trans = input_func(peaks_slice)
+                profs_trans = profs_trans[:, :num_tasks]
+                profs_ctrls = profiles[:, num_tasks:]
+                # print(profs_trans.shape) ####
+                # print(profs_ctrls.shape) ####
+                seqs_in, profs_ctrls_in, profs_trans_in = get_ablated_inputs(fps_slice, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, masks, num_runs, profs_trans=profs_trans)
+                profs_preds_logits, counts_preds = run_model(model_path, seqs_in, profs_ctrls_in, fps, model_args_extras=model_args_extras, profs_trans=profs_trans_in)
+            else:
+                seqs, profiles = input_func(peaks_slice)
+                profs_ctrls = profiles[:, num_tasks:]
+                seqs_in, profs_ctrls_in = get_ablated_inputs(fps_slice, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, masks, num_runs)
+                profs_preds_logits, counts_preds = run_model(model_path, seqs_in, profs_ctrls_in, fps, model_args_extras=model_args_extras)
 
-        metrics = get_metrics(profs_preds_logits, counts_preds, num_runs)
-        result_b = {
-            "footprints": fps_slice,
-            "peaks": [fp_to_peak[i] for i in fps_slice],
-            "metrics": metrics,
-        }
-        results.append(result_b)
+            metrics = get_metrics(profs_preds_logits, counts_preds, num_runs)
+            result_b = {
+                "footprints": fps_slice,
+                "peaks": [fp_to_peak[i] for i in fps_slice],
+                "metrics": metrics,
+            }
+            results.append(result_b)
 
-        for ind, val in enumerate(fps_slice):
-            fp_idx[val] = (batch, ind)
+            for ind, val in enumerate(fps_slice):
+                fp_idx[val] = (batch, ind)
+
+        except Exception as e:
+            traceback.print_exc()
 
     export = {"results": results, "index": fp_idx}
     # print(export) ####
