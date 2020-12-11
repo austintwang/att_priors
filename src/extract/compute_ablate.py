@@ -250,7 +250,7 @@ def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs
     fp_idx = {}
     # fps = fps[:100] ####
     for batch, i in enumerate(tqdm.tqdm(range(0, len(fps), batch_size))):
-        if i < 680: ####
+        if batch < 680: ####
             continue
         j = min(i + batch_size, len(fps))
         fps_slice = fps[i:j]
