@@ -20,17 +20,13 @@ import traceback
 DEVNULL = open(os.devnull, "w")
 STDOUT = sys.stdout
 
-# RUN_ID = "transfer_v5"
-RUN_ID = "baseline_v2"
-
-OUT_DIR = f"/mnt/lab_data2/atwang/models/domain_adapt/dnase/ablation/{RUN_ID}/"
-# OUT_DIR = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/ablation/test/"
+EXP_DIR = f"/mnt/lab_data2/atwang/models/domain_adapt/dnase/ablation/exp_data/"
 
 ablate_ex = sacred.Experiment("motif_ablation", ingredients=[
     profile_performance.performance_ex
 ])
 ablate_ex.observers.append(
-    sacred.observers.FileStorageObserver.create(OUT_DIR)
+    sacred.observers.FileStorageObserver.create(EXP_DIR)
 )
 
 def hide_stdout():
@@ -169,17 +165,20 @@ def get_ablated_inputs(fps_in, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, s
     return np.stack(seqs_out), np.stack(profs_ctrls_out)
         
 @ablate_ex.capture
-def run_model(model_path, seqs, profs_ctrls, fps, gpu_id, model_args_extras=None, profs_trans=None):
+def load_model(model_path, model_classname, gpu_id, model_args_extras=None):
     torch.set_grad_enabled(True)
     device = torch.device(f"cuda:{gpu_id}") if torch.cuda.is_available() else torch.device("cpu")
-    if profs_trans is not None:
+    if model_classname == "prof_trans":
         model_class = profile_models.ProfilePredictorTransfer
     else:
         model_class = profile_models.ProfilePredictorWithMatchedControls
     model = restore_model(model_class, model_path, model_args_extras=model_args_extras)
     model.eval()
     model = model.to(device)
+    return model
 
+@ablate_ex.capture
+def run_model(model, seqs, profs_ctrls, fps, gpu_id, profs_trans=None):
     # print(seqs[:5]) ####
     # print(seqs.shape) ####
     # print(profs_ctrls.shape) ####
@@ -233,12 +232,13 @@ def get_metrics(profs_preds_logits, counts_preds, num_runs):
 @ablate_ex.command
 def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs, chrom_set, num_tasks, prof_size, center_size_to_use, batch_size, model_args_extras=None):
     print("Loading footprints...")
+
     peaks, peak_to_fp_prof, peak_to_fp_reg = data_loading.get_profile_footprint_coords(files_spec, prof_size=prof_size, region_size=center_size_to_use, chrom_set=chrom_set)
     masks = {k: create_mask(k, v) for k, v in peak_to_fp_reg.items()}
     fp_to_peak = get_fp_to_peak(peak_to_fp_prof)
     fps = list(fp_to_peak.keys())
-    # peak_to_seq_idx = {val: ind for ind, val in enumerate(peaks)}
-    # fp_to_seq_slice = get_fp_to_seq_slice(fp_to_peak, peak_to_seq_idx)
+
+    print("Loading model...")
 
     if model_class == "prof_trans":
         input_func = data_loading.get_profile_trans_input_func(
@@ -249,7 +249,10 @@ def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs
             files_spec, center_size_to_use, prof_size, reference_fasta,
         )
 
+    model = load_model(model_path, model_class, model_args_extras=model_args_extras)
+
     print("Computing metrics...")
+
     results = []
     fp_idx = {}
     # fps = fps[:100] ####
@@ -268,14 +271,14 @@ def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs
                 profs_trans = profs_trans[:, :num_tasks]
                 profs_ctrls = profiles[:, num_tasks:]
                 # print(profs_trans.shape) ####
-                # print(profs_ctrls.shape) ####
+                # print(profs_ctrls.shape) #### 
                 seqs_in, profs_ctrls_in, profs_trans_in = get_ablated_inputs(fps_slice, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, masks, num_runs, profs_trans=profs_trans)
-                profs_preds_logits, counts_preds = run_model(model_path, seqs_in, profs_ctrls_in, fps, model_args_extras=model_args_extras, profs_trans=profs_trans_in)
+                profs_preds_logits, counts_preds = run_model(model, seqs_in, profs_ctrls_in, fps, profs_trans=profs_trans_in)
             else:
                 seqs, profiles = input_func(peaks_slice)
                 profs_ctrls = profiles[:, num_tasks:]
                 seqs_in, profs_ctrls_in = get_ablated_inputs(fps_slice, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, masks, num_runs)
-                profs_preds_logits, counts_preds = run_model(model_path, seqs_in, profs_ctrls_in, fps, model_args_extras=model_args_extras)
+                profs_preds_logits, counts_preds = run_model(model, seqs_in, profs_ctrls_in, fps)
 
             metrics = get_metrics(profs_preds_logits, counts_preds, num_runs)
             result_b = {
@@ -311,7 +314,8 @@ def main():
     hdf5_dir = "/mnt/lab_data2/atwang/att_priors/data/processed/ENCODE_DNase/profile/labels"
     peak_bed_dir = "/mnt/lab_data2/amtseng/share/austin/dnase"
     fp_bed_dir = "/users/amtseng/att_priors/data/raw/DNase_footprints/footprints_per_sample/"
-    out_dir = OUT_DIR
+
+    out_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/ablation/transfer_v5/"
 
     cell_types = {
         "K562": ["ENCSR000EOT"],
@@ -324,6 +328,11 @@ def main():
 
     run_id = "1"
 
+    extras = {
+        "prof_trans_conv_kernel_size": 15,
+        "prof_trans_conv_channels": [5],
+    }
+
     for i, i_ex in cell_types.items():
         for j, j_ex in cell_types.items():
             if i == j:
@@ -333,43 +342,65 @@ def main():
             with open(metrics_path, "r") as f:
                 metrics = json.load(f)
 
-            best_epoch = metrics[f"{i}_from_{j}_best_epoch"]["values"][0]
-            model_path = os.path.join(models_dir, f"{i}_from_{j}_{run_id}", f"model_ckpt_epoch_{best_epoch}.pt")
-
             files_spec = {
                 "profile_hdf5": os.path.join(hdf5_dir, f"{i}/{i}_profiles.h5"),
                 "profile_trans_hdf5": os.path.join(hdf5_dir, f"{j}/{j}_profiles.h5"),
                 "peak_beds": [os.path.join(peak_bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in i_ex],
                 "footprint_beds": [os.path.join(fp_bed_dir, fex) for fex in fp_beds[i]]
             }
-            out_path = os.path.join(out_dir, f"{i}_from_{j}_ablate.pickle")
 
-            extras = {
-                "prof_trans_conv_kernel_size": 15,
-                "prof_trans_conv_channels": [5],
-            }
+            best_epoch = metrics[f"{i}_from_{j}_best_epoch"]["values"][0]
+            model_path = os.path.join(models_dir, f"{i}_from_{j}_{run_id}", f"model_ckpt_epoch_{best_epoch}.pt")
 
-            # run(files_spec, model_path, reference_fasta, model_class, out_path, model_args_extras=extras)
+            out_path = os.path.join(out_dir, f"{i}_from_{j}_ablate_run_{i}.pickle")
+
+            run(files_spec, model_path, reference_fasta, model_class, out_path, model_args_extras=extras)
+
+            best_epoch = metrics[f"{j}_from_{i}_best_epoch"]["values"][0] + 1
+            model_path = os.path.join(models_dir, f"{j}_from_{i}_{run_id}", f"model_ckpt_epoch_{best_epoch}.pt")
+
+            out_path = os.path.join(out_dir, f"{j}_from_{i}_ablate_run_{i}.pickle")
+
+            run(files_spec, model_path, reference_fasta, model_class, out_path, model_args_extras=extras)
 
     model_class = "profile"
     models_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/baseline_v2/"
     run_id = "1"
 
+    out_dir = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/ablation/baseline_v2/"
+
     for i, i_ex in cell_types.items():
-        metrics_path = os.path.join(models_dir, run_id, "metrics.json")
-        with open(metrics_path, "r") as f:
-            metrics = json.load(f)
+        for j, j_ex in cell_types.items():
+            if i == j:
+                continue
+            metrics_path = os.path.join(models_dir, run_id, "metrics.json")
+            with open(metrics_path, "r") as f:
+                metrics = json.load(f)
 
-        best_epoch = metrics[f"{i}_dnase_base_best_epoch"]["values"][0]
-        if best_epoch is None:
-            best_epoch = np.argmin(metrics[f"{i}_dnase_base_val_epoch_loss"]["values"])
-        model_path = os.path.join(models_dir, f"{i}_dnase_base_{run_id}", f"model_ckpt_epoch_{best_epoch}.pt")
+            files_spec_path = {
+                "profile_hdf5": os.path.join(hdf5_dir, f"{i}/{i}_profiles.h5"),
+                "peak_beds": [os.path.join(peak_bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in i_ex],
+                "footprint_beds": [os.path.join(fp_bed_dir, fex) for fex in fp_beds[i]]
+            }
 
-        files_spec_path = {
-            "profile_hdf5": os.path.join(hdf5_dir, f"{i}/{i}_profiles.h5"),
-            "peak_beds": [os.path.join(peak_bed_dir, f"DNase_{ex}_{i}_idr-optimal-peaks.bed.gz") for ex in i_ex],
-            "footprint_beds": [os.path.join(fp_bed_dir, fex) for fex in fp_beds[i]]
-        }
-        out_path = os.path.join(out_dir, f"{i}_base_ablate.pickle")
+            best_epoch = metrics[f"{i}_dnase_base_best_epoch"]["values"][0]
+            if best_epoch is None:
+                best_epoch = np.argmin(metrics[f"{i}_dnase_base_val_epoch_loss"]["values"]) + 1
+            else:
+                best_epoch += 1
+            model_path = os.path.join(models_dir, f"{i}_dnase_base_{run_id}", f"model_ckpt_epoch_{best_epoch}.pt")
 
-        run(files_spec, model_path, reference_fasta, model_class, out_path)
+            out_path = os.path.join(out_dir, f"{i}_base_ablate_run_{i}.pickle")
+
+            run(files_spec, model_path, reference_fasta, model_class, out_path)
+
+            best_epoch = metrics[f"{j}_dnase_base_best_epoch"]["values"][0]
+            if best_epoch is None:
+                best_epoch = np.argmin(metrics[f"{j}_dnase_base_val_epoch_loss"]["values"]) + 1
+            else:
+                best_epoch += 1
+            model_path = os.path.join(models_dir, f"{j}_dnase_base_{run_id}", f"model_ckpt_epoch_{best_epoch}.pt")
+
+            out_path = os.path.join(out_dir, f"{j}_base_ablate_run_{i}.pickle")
+
+            run(files_spec, model_path, reference_fasta, model_class, out_path)
