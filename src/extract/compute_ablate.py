@@ -255,7 +255,7 @@ def run(files_spec, model_path, reference_fasta, model_class, out_path, num_runs
 
     results = []
     fp_idx = {}
-    fps = fps[:100] ####
+    # fps = fps[:100] ####
     for batch, i in enumerate(tqdm.tqdm(range(0, len(fps), batch_size))):
         # if batch < 680: ####
         #     continue
