@@ -168,6 +168,8 @@ def get_ablated_inputs(fps_in, seqs, profs_ctrls, fp_to_seq_slice, fp_to_peak, s
 def load_model(model_path, model_classname, gpu_id, model_args_extras=None):
     torch.set_grad_enabled(True)
     device = torch.device(f"cuda:{gpu_id}") if torch.cuda.is_available() else torch.device("cpu")
+    print(f"Running on {device}")
+    
     if model_classname == "prof_trans":
         model_class = profile_models.ProfilePredictorTransfer
     else:
