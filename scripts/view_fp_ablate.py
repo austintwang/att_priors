@@ -14,7 +14,7 @@ font_manager.fontManager.ttflist.extend(
     )
 )
 
-def load_fp_results(results):
+def load_fp_results(results, metric_names):
     fps = []
     peaks = []
     avg_metrics = {}
@@ -26,12 +26,22 @@ def load_fp_results(results):
             metrics_mean_b = np.mean(v, axis=0)
             avg_metrics.setdefault(k, []).extend(metrics_mean_b)
 
-    results_dict = {"Footprint Coordinates": np.array(fps), "Peak Coordinates": np.array(peaks)}
+    results_dict = {"Footprint Coordinates": fps, "Peak Coordinates": peaks}
     # print(avg_metrics.keys()) ####
-    for k, v in avg_metrics.items():
-        metrics_mean = np.concatenate(v)
-        results_dict[k] = metrics_mean
-    print([(k, v.shape) for k, v in results_dict.items()]) ####
+    metric_names_vars = []
+    for k, v in metric_names.items():
+        metrics = avg_metrics[k]
+        metrics_mean = np.concatenate(metrics)
+        if v is None:
+            results_dict[k] = metrics_mean
+            metric_names_vars.append(k)
+        else:
+            for pos, var in enumerate(v):
+                name_var = k + var
+                results_dict[name_var] = metrics_mean[:,pos]
+                metric_names_vars.append(name_var)
+
+    # print([(k, v.shape) for k, v in results_dict.items()]) ####
     results_df = pd.DataFrame(results_dict)
 
     return results_df
@@ -72,9 +82,9 @@ def plot_fps(results_df, metric_name, plt_path, sample_size=None):
 
 def view_fp_ablate(results_path, plt_dir, models_path, model_query_run, prefix, metric_names):
     results = pd.read_pickle(results_path)["results"]
-    results_df = load_fp_results(results)
+    results_df, metric_names_vars = load_fp_results(results, metric_names)
     results_df = load_enrichments(results_df, prefix, models_path, model_query_run)
-    for metric_name in metric_names:
+    for metric_name in metric_names_vars:
         plt_path = os.path.join(plt_dir, f"{metric_name}.svg")
         plot_fps(results_df, metric_name, plt_path, sample_size=1000)
 
@@ -84,7 +94,15 @@ if __name__ == '__main__':
     out_dir_base = "/users/atwang/results/domain_adapt_results/dnase_models/"
     # models_path = "/users/atwang/transfer/models/trained_models/profile/misc/"
     run_id = "1"
-    metric_names = ['nll', 'jsd', 'auprc_binned', 'pearson_binned', 'spearman_binned', 'mse_binned', 'counts_diff']
+    metric_names = {
+        'nll': None, 
+        'jsd': None, 
+        'auprc_binned': ["_bin1", "_bin4", "_bin10"], 
+        'pearson_binned': ["_bin1", "_bin4", "_bin10"], 
+        'spearman_binned': ["_bin1", "_bin4", "_bin10"], 
+        'mse_binned': ["_bin1", "_bin4", "_bin10"], 
+        'counts_diff': [""]
+    }
 
     cell_types = ["K562", "HepG2"]
     for i in cell_types:
