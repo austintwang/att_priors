@@ -56,7 +56,7 @@ def load_enrichments(results_df, genome_prefix, models_path, query_run):
     metrics_path = os.path.join(models_path, f"{prefix}_{query_run}", "metrics.pickle")
     metrics_genome = pd.read_pickle(metrics_path)
     coords_genome = [tuple(i) for i in metrics_genome["coords"]]
-    print(coords_genome) ####
+    # print(coords_genome) ####
     counts_to = metrics_genome["counts_to"].sum(axis=-1)[:,0]
     counts_from = metrics_genome["counts_from"].sum(axis=-1)[:,0]
     counts_sum = np.clip(np.log(counts_to + epsilon) + np.log(counts_from + epsilon), 10, 17)
@@ -116,13 +116,14 @@ if __name__ == '__main__':
         for j in cell_types:
             if i == j:
                 continue
-            prefix = f"{i}_from_{j}"
+            
             # nogenome_prefix = f"{i}_from_{j}_aux"
             # nogenome_prefix = f"{i}_from_{i}" ####
-            out_dir = os.path.join(out_dir_base, prefix)
 
             res_names = [f"{i}_from_{j}_ablate_run_{i}", f"{i}_from_{j}_ablate_run_{j}"]
-            for res_name in res_names:
+            prefixes = [f"{j}_from_{i}", f"{i}_from_{j}"]
+            for res_name, prefix in zip(res_names, prefixes):
+                out_dir = os.path.join(out_dir_base, prefix)
                 results_path = os.path.join(ablate_path, f"{res_name}.pickle")
                 plt_dir = os.path.join(out_dir_base, prefix, res_name)
                 os.makedirs(plt_dir, exist_ok=True)
