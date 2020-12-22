@@ -31,7 +31,7 @@ def load_fp_results(results):
     for k, v in avg_metrics.items():
         metrics_mean = np.concatenate(v)
         results_dict[k] = metrics_mean
-    print([k, v.shape for k, v in avg_metrics.items()]) ####
+    print([(k, v.shape) for k, v in avg_metrics.items()]) ####
     results_df = pd.DataFrame(results_dict)
 
     return results_df
