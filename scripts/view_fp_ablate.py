@@ -68,6 +68,7 @@ def load_enrichments(results_df, genome_prefix, models_path, query_run):
 
 def plot_fps(results_df, metric_name, plt_path, sample_size=None):
     if sample_size is not None:
+        print(results_df) ####
         results_df = results_df.sample(n=sample_size)
 
     sns.set(style="whitegrid", font="Roboto")
