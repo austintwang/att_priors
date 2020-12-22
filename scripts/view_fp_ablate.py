@@ -21,7 +21,7 @@ def load_fp_results(results, metric_names):
     for batch in results:
         # print(batch["metrics"]) ####
         fps.extend(batch["footprints"])
-        peaks.extend([i[1] for i in batch["peaks"]])
+        peaks.extend(batch["peaks"])
         for k, v in batch["metrics"].items():
             metrics_mean_b = np.mean(v, axis=0)
             avg_metrics.setdefault(k, []).extend(metrics_mean_b)
@@ -55,13 +55,15 @@ def load_enrichments(results_df, genome_prefix, models_path, query_run):
 
     metrics_path = os.path.join(models_path, f"{prefix}_{query_run}", "metrics.pickle")
     metrics_genome = pd.read_pickle(metrics_path)
-    coords_genome = metrics_genome["coords"][:,1]
+    coords_genome = [tuple(i) for i in metrics_genome["coords"]]
     counts_to = metrics_genome["counts_to"].sum(axis=-1)[:,0]
     counts_from = metrics_genome["counts_from"].sum(axis=-1)[:,0]
     counts_sum = np.clip(np.log(counts_to + epsilon) + np.log(counts_from + epsilon), 10, 17)
     counts_diff = np.log(counts_to + epsilon) - np.log(counts_from + epsilon) + offset
-    arr_genome = np.stack((coords_genome, counts_diff, counts_sum), axis=1)
-    df_genome = pd.DataFrame(arr_genome, columns=["Peak Coordinates", "Enrichment Difference", "Enrichment Sum"])
+    dct_genome = {"Peak Coordinates": coords_genome, "Enrichment Difference": counts_diff, "Enrichment Sum": counts_sum}
+    df_genome = pd.DataFrame(dct_genome)
+    # arr_genome = np.stack((coords_genome, counts_diff, counts_sum), axis=1)
+    # df_genome = pd.DataFrame(arr_genome, columns=["Peak Coordinates", "Enrichment Difference", "Enrichment Sum"])
 
     print(results_df)
     print(df_genome)
