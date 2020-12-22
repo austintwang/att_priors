@@ -27,11 +27,11 @@ def load_fp_results(results):
             avg_metrics.setdefault(k, []).extend(metrics_mean_b)
 
     results_dict = {"Footprint Coordinates": fps, "Peak Coordinates": peaks}
-    print(avg_metrics.keys()) ####
+    # print(avg_metrics.keys()) ####
     for k, v in avg_metrics.items():
         metrics_mean = np.concatenate(v)
         results_dict[k] = metrics_mean
-
+    print([k, v.shape for avg_metrics.items()]) ####
     results_df = pd.DataFrame(results_dict)
 
     return results_df
@@ -84,9 +84,7 @@ if __name__ == '__main__':
     out_dir_base = "/users/atwang/results/domain_adapt_results/dnase_models/"
     # models_path = "/users/atwang/transfer/models/trained_models/profile/misc/"
     run_id = "1"
-    metric_names = {
-
-    }
+    metric_names = ['nll', 'jsd', 'auprc_binned', 'pearson_binned', 'spearman_binned', 'mse_binned', 'counts_diff']
 
     cell_types = ["K562", "HepG2"]
     for i in cell_types:
