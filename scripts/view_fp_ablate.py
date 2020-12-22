@@ -41,7 +41,7 @@ def load_fp_results(results, metric_names):
                 results_dict[name_var] = metrics_mean[:,pos]
                 metric_names_vars.append(name_var)
 
-    print([(k, v.shape if isinstance(v, np.ndarray) else len(v)) for k, v in results_dict.items()]) ####
+    # print([(k, v.shape if isinstance(v, np.ndarray) else len(v)) for k, v in results_dict.items()]) ####
     results_df = pd.DataFrame(results_dict)
 
     return results_df
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     metric_names = {
         'nll': None, 
         'jsd': None, 
-        'auprc_binned': ["_bin1", "_bin4", "_bin10"], 
+        # 'auprc_binned': ["_bin1", "_bin4", "_bin10"], 
         'pearson_binned': ["_bin1", "_bin4", "_bin10"], 
         'spearman_binned': ["_bin1", "_bin4", "_bin10"], 
         'mse_binned': ["_bin1", "_bin4", "_bin10"], 
