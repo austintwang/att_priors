@@ -46,7 +46,7 @@ def load_fp_results(results, metric_names):
 
     return results_df, metric_names_vars
 
-def load_enrichments(results_df, genome_prefix, models_path, model_query_run):
+def load_enrichments(results_df, genome_prefix, models_path, query_run):
     epsilon = 1.
     if prefix == "K562_from_HepG2":
         offset = np.log(1400599316) - np.log(1728009533)
