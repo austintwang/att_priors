@@ -66,8 +66,8 @@ def load_enrichments(results_df, genome_prefix, models_path, query_run):
     # arr_genome = np.stack((coords_genome, counts_diff, counts_sum), axis=1)
     # df_genome = pd.DataFrame(arr_genome, columns=["Peak Coordinates", "Enrichment Difference", "Enrichment Sum"])
 
-    print(sorted(results_df["Peak Coordinates"]))
-    print(sorted(df_genome["Peak Coordinates"]))
+    print(sorted(results_df["Peak Coordinates"])[:100])
+    print(sorted(df_genome["Peak Coordinates"])[:100])
     df_merged = results_df.merge(df_genome, on="Peak Coordinates")
     print(df_merged) ####
     return df_merged
