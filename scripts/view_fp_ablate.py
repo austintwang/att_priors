@@ -19,15 +19,12 @@ def load_fp_results(results):
     peaks = []
     avg_metrics = {}
     for batch in results:
-        print(batch["metrics"]) ####
-        data = zip(*(batch[i] for i in ("footprints", "peaks", "metrics")))
-        for fps_b, peaks_b, metrics_b in data:
-            print(fps_b, peaks_b, metrics_b) ####
-            fps.extend(fps_b)
-            peaks.extend(peaks_b)
-            for k, v in metrics_b.items():
-                metrics_mean_b = np.mean(v, axis=0)
-                avg_metrics.setdefault(k, []).append(metrics_mean_b)
+        # print(batch["metrics"]) ####
+        fps.extend(batch["footprints"])
+        peaks.extend(batch["peaks"])
+        for k, v in batch["metrics"].items():
+            metrics_mean_b = np.mean(v, axis=0)
+            avg_metrics.setdefault(k, []).extend(metrics_mean_b)
 
     results_dict = {"Footprint Coordinates": fps, "Peak Coordinates": peaks}
     print(avg_metrics.keys()) ####
