@@ -21,7 +21,7 @@ def load_fp_results(results, metric_names):
     for batch in results:
         # print(batch["metrics"]) ####
         fps.extend(batch["footprints"])
-        peaks.extend(batch["peaks"])
+        peaks.extend([i[1] for i in batch["peaks"]])
         for k, v in batch["metrics"].items():
             metrics_mean_b = np.mean(v, axis=0)
             avg_metrics.setdefault(k, []).extend(metrics_mean_b)
