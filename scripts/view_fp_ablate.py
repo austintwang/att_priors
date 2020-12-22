@@ -44,7 +44,7 @@ def load_fp_results(results, metric_names):
     # print([(k, v.shape if isinstance(v, np.ndarray) else len(v)) for k, v in results_dict.items()]) ####
     results_df = pd.DataFrame(results_dict)
 
-    return results_df
+    return results_df, metric_names_vars
 
 def load_enrichments(results_df, genome_prefix, metrics_path, models_path, model_query_run):
     epsilon = 1.
