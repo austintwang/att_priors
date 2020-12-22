@@ -21,6 +21,7 @@ def load_fp_results(results):
     for batch in results:
         data = zip(*(batch[i] for i in ("footprints", "peaks", "metrics")))
         for fps_b, peaks_b, metrics_b in data:
+            print(fps_b, peaks_b, metrics_b)
             fps.extend(fps_b)
             peaks.extend(peaks_b)
             for k, v in metrics_b.items():
