@@ -104,7 +104,7 @@ if __name__ == '__main__':
                 results_path = os.path.join(ablate_path, f"{res_name}.pickle")
                 plt_dir = os.path.join(out_dir_base, prefix, res_name)
                 os.makedirs(plt_dir, exist_ok=True)
-                view_fp_ablate(results_path, plt_dir, models_path, run_id, prefix)
+                view_fp_ablate(results_path, plt_dir, models_path, run_id, prefix, metric_names)
 
     # models_path = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/baseline/"
     # out_dir_base = "/users/atwang/results/domain_adapt_results/dnase_models_baseline/"
