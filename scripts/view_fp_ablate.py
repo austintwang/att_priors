@@ -28,6 +28,7 @@ def load_fp_results(results):
                 avg_metrics.setdefault(k, []).append(metrics_mean_b)
 
     results_dict = {"Footprint Coordinates": fps, "Peak Coordinates": peaks}
+    print(avg_metrics.keys()) ####
     for k, v in avg_metrics.items():
         metrics_mean = np.concatenate(v)
         results_dict[k] = metrics_mean
@@ -70,7 +71,7 @@ def plot_fps(results_df, metric_name, plt_path, sample_size=None):
     plt.savefig(plt_path, bbox_inches='tight')
     plt.clf()
 
-def view_fp_ablate(results_path, plt_dir, models_path, model_query_run, prefix):
+def view_fp_ablate(results_path, plt_dir, models_path, model_query_run, prefix, metric_names):
     results = pd.read_pickle(results_path)
     results_df = load_fp_results(results)
     results_df = load_enrichments(results_df, prefix, models_path, model_query_run)
@@ -84,6 +85,9 @@ if __name__ == '__main__':
     out_dir_base = "/users/atwang/results/domain_adapt_results/dnase_models/"
     # models_path = "/users/atwang/transfer/models/trained_models/profile/misc/"
     run_id = "1"
+    metric_names = {
+
+    }
 
     cell_types = ["K562", "HepG2"]
     for i in cell_types:
@@ -95,7 +99,7 @@ if __name__ == '__main__':
             # nogenome_prefix = f"{i}_from_{i}" ####
             out_dir = os.path.join(out_dir_base, prefix)
 
-            res_name = [f"{i}_from_{j}_ablate_run_{i}", f"{i}_from_{j}_ablate_run_{j}"]
+            res_names = [f"{i}_from_{j}_ablate_run_{i}", f"{i}_from_{j}_ablate_run_{j}"]
             for res_name in res_names:
                 results_path = os.path.join(ablate_path, f"{res_name}.pickle")
                 plt_dir = os.path.join(out_dir_base, prefix, res_name)
