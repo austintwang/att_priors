@@ -20,6 +20,7 @@ def load_fp_results(results):
     avg_metrics = {}
     for batch in results:
         data = zip(batch[i] for i in ("footprints", "peaks", "metrics"))
+        print(batch) ####
         for fps_b, peaks_b, metrics_b in data:
             fps.extend(fps_b)
             peaks.extend(peaks_b)
