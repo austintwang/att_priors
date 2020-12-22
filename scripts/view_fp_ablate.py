@@ -56,6 +56,7 @@ def load_enrichments(results_df, genome_prefix, models_path, query_run):
     metrics_path = os.path.join(models_path, f"{prefix}_{query_run}", "metrics.pickle")
     metrics_genome = pd.read_pickle(metrics_path)
     coords_genome = [tuple(i) for i in metrics_genome["coords"]]
+    print(coords_genome) ####
     counts_to = metrics_genome["counts_to"].sum(axis=-1)[:,0]
     counts_from = metrics_genome["counts_from"].sum(axis=-1)[:,0]
     counts_sum = np.clip(np.log(counts_to + epsilon) + np.log(counts_from + epsilon), 10, 17)
@@ -67,7 +68,7 @@ def load_enrichments(results_df, genome_prefix, models_path, query_run):
 
     print(results_df)
     print(df_genome)
-    df_merged = results_df.merge(df_genome, on="Peak Coordinates").astype(float)
+    df_merged = results_df.merge(df_genome, on="Peak Coordinates")
     # print(df_merged) ####
     return df_merged
 
