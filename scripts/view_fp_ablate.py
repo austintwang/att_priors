@@ -72,7 +72,7 @@ def plot_fps(results_df, metric_name, plt_path, sample_size=None):
     plt.clf()
 
 def view_fp_ablate(results_path, plt_dir, models_path, model_query_run, prefix, metric_names):
-    results = pd.read_pickle(results_path)
+    results = pd.read_pickle(results_path)["results"]
     results_df = load_fp_results(results)
     results_df = load_enrichments(results_df, prefix, models_path, model_query_run)
     for metric_name in metric_names:
