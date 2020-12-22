@@ -64,11 +64,12 @@ def load_enrichments(results_df, genome_prefix, models_path, query_run):
     df_genome = pd.DataFrame(arr_genome, columns=["Peak Coordinates", "Enrichment Difference", "Enrichment Sum"])
 
     df_merged = results_df.merge(df_genome, on="Peak Coordinates").astype(float)
+    print(df_merged) ####
     return df_merged
 
 def plot_fps(results_df, metric_name, plt_path, sample_size=None):
     if sample_size is not None:
-        print(results_df) ####
+        # print(results_df) ####
         results_df = results_df.sample(n=sample_size)
 
     sns.set(style="whitegrid", font="Roboto")
