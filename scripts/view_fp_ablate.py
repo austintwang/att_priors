@@ -26,7 +26,7 @@ def load_fp_results(results):
             metrics_mean_b = np.mean(v, axis=0)
             avg_metrics.setdefault(k, []).extend(metrics_mean_b)
 
-    results_dict = {"Footprint Coordinates": fps, "Peak Coordinates": peaks}
+    results_dict = {"Footprint Coordinates": np.array(fps), "Peak Coordinates": np.array(peaks)}
     # print(avg_metrics.keys()) ####
     for k, v in avg_metrics.items():
         metrics_mean = np.concatenate(v)
