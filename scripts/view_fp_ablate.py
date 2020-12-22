@@ -41,7 +41,7 @@ def load_fp_results(results, metric_names):
                 results_dict[name_var] = metrics_mean[:,pos]
                 metric_names_vars.append(name_var)
 
-    # print([(k, v.shape) for k, v in results_dict.items()]) ####
+    print([(k, v.shape if isinstance(v, np.ndarray) else len(v)) for k, v in results_dict.items()]) ####
     results_df = pd.DataFrame(results_dict)
 
     return results_df
