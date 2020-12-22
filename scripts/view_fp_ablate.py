@@ -63,7 +63,7 @@ def load_enrichments(results_df, genome_prefix, models_path, query_run):
     arr_genome = np.stack((coords_genome, counts_diff, counts_sum), axis=1)
     df_genome = pd.DataFrame(arr_genome, columns=["Peak Coordinates", "Enrichment Difference", "Enrichment Sum"])
 
-    df_merged = results_df.merge(df_nogenome, on="Peak Coordinates").astype(float)
+    df_merged = results_df.merge(df_genome, on="Peak Coordinates").astype(float)
     return df_merged
 
 def plot_fps(results_df, metric_name, plt_path, sample_size=None):
