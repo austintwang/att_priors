@@ -54,7 +54,7 @@ def load_enrichments(results_df, genome_prefix, models_path, query_run):
         offset = np.log(1728009533) - np.log(1400599316)
 
     metrics_path = os.path.join(models_path, f"{prefix}_{query_run}", "metrics.pickle")
-    metrics_genome = metrics_genome_dict.setdefault(query_run, pd.read_pickle(metrics_path)) 
+    metrics_genome = pd.read_pickle(metrics_path)
     coords_genome = metrics_genome["coords"][:,1]
     counts_to = metrics_genome["counts_to"].sum(axis=-1)[:,0]
     counts_from = metrics_genome["counts_from"].sum(axis=-1)[:,0]
