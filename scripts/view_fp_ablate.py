@@ -121,7 +121,7 @@ if __name__ == '__main__':
             # nogenome_prefix = f"{i}_from_{i}" ####
 
             res_names = [f"{i}_from_{j}_ablate_run_{i}", f"{i}_from_{j}_ablate_run_{j}"]
-            prefixes = [f"{j}_from_{i}", f"{i}_from_{j}"]
+            prefixes = [f"{i}_from_{j}", f"{j}_from_{i}",]
             for res_name, prefix in zip(res_names, prefixes):
                 out_dir = os.path.join(out_dir_base, prefix)
                 results_path = os.path.join(ablate_path, f"{res_name}.pickle")
