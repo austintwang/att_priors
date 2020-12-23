@@ -30,7 +30,7 @@ def load_fp_results(results, metric_names, peak_size):
                 half_size = int(0.5 * peak_size)
                 start_s = center - half_size
                 end_s = center + peak_size - half_size
-            peaks.append((chrom, start_s, end_s),)
+                peaks.append((chrom, start_s, end_s),)
         for k, v in batch["metrics"].items():
             metrics_mean_b = np.mean(v, axis=0)
             avg_metrics.setdefault(k, []).extend(metrics_mean_b)
