@@ -14,14 +14,23 @@ font_manager.fontManager.ttflist.extend(
     )
 )
 
-def load_fp_results(results, metric_names):
+def load_fp_results(results, metric_names, peak_size):
     fps = []
     peaks = []
     avg_metrics = {}
     for batch in results:
         # print(batch["metrics"]) ####
         fps.extend(batch["footprints"])
-        peaks.extend(batch["peaks"])
+        if peak_size is None:
+            peaks.extend(batch["peaks"])
+        else:
+            for p in peaks:
+                chrom, start, end = p
+                center = int(0.5 * (start + end))
+                half_size = int(0.5 * peak_size)
+                start_s = center - half_size
+                end_s = center + peak_size - half_size
+            peaks.append((chrom, start_s, end_s),)
         for k, v in batch["metrics"].items():
             metrics_mean_b = np.mean(v, axis=0)
             avg_metrics.setdefault(k, []).extend(metrics_mean_b)
