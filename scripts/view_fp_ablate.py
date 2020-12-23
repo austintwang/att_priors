@@ -96,9 +96,9 @@ def plot_fps(results_df, metric_name, plt_path, sample_size=None):
     plt.savefig(plt_path, bbox_inches='tight')
     plt.clf()
 
-def view_fp_ablate(results_path, plt_dir, models_path, model_query_run, prefix, metric_names):
+def view_fp_ablate(results_path, plt_dir, models_path, model_query_run, prefix, metric_names, peak_size=None):
     results = pd.read_pickle(results_path)["results"]
-    results_df, metric_names_vars = load_fp_results(results, metric_names)
+    results_df, metric_names_vars = load_fp_results(results, metric_names, peak_size)
     results_df = load_enrichments(results_df, prefix, models_path, model_query_run)
     for metric_name in metric_names_vars:
         plt_path = os.path.join(plt_dir, f"{metric_name}.svg")
@@ -136,7 +136,7 @@ if __name__ == '__main__':
                 results_path = os.path.join(ablate_path, f"{res_name}.pickle")
                 plt_dir = os.path.join(out_dir_base, prefix, res_name)
                 os.makedirs(plt_dir, exist_ok=True)
-                view_fp_ablate(results_path, plt_dir, models_path, run_id, prefix, metric_names)
+                view_fp_ablate(results_path, plt_dir, models_path, run_id, prefix, metric_names, peak_size=2114)
 
     # models_path = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/baseline/"
     # out_dir_base = "/users/atwang/results/domain_adapt_results/dnase_models_baseline/"
