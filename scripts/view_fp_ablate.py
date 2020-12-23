@@ -24,7 +24,7 @@ def load_fp_results(results, metric_names, peak_size):
         if peak_size is None:
             peaks.extend(batch["peaks"])
         else:
-            for p in peaks:
+            for p in batch["peaks"]:
                 chrom, start, end = p
                 center = int(0.5 * (start + end))
                 half_size = int(0.5 * peak_size)
