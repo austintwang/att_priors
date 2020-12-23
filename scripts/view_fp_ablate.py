@@ -79,6 +79,7 @@ def load_enrichments(results_df, genome_prefix, models_path, query_run):
     # print(sorted(df_genome["Peak Coordinates"])[:100])
     df_merged = results_df.merge(df_genome, on="Peak Coordinates")
     print(df_merged) ####
+    print(results_df["Peak Coordinates"].shape) ####
     return df_merged
 
 def plot_fps(results_df, metric_name, plt_path, sample_size=None):
