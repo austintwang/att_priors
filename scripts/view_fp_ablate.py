@@ -23,6 +23,8 @@ def construct_query_table(peaks):
         for pos_hash in range(start_hash, end_hash + 1):
             table.setdefault((chrom, pos_hash), set()).add((start, end),)
 
+    return table
+
 def query_peak(query_table, peak):
     chrom, start, end = peak
     begin_hash = int(start) // 1000
