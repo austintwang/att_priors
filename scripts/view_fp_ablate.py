@@ -76,7 +76,7 @@ def load_fp_results(results, metric_names):
 
     return results_df, metric_names_vars, peak_table
 
-def load_enrichments(results_df, genome_prefix, models_path, query_run, peak_table):
+def load_enrichments(results_df, prefix, models_path, query_run, peak_table):
     epsilon = 1.
     if prefix == "K562_from_HepG2":
         offset = np.log(1400599316) - np.log(1728009533)
@@ -125,7 +125,7 @@ def view_fp_ablate(results_path, plt_dir, models_path, model_query_run, prefix, 
     results_df = load_enrichments(results_df, prefix, models_path, model_query_run, peak_table)
     for metric_name in metric_names_vars:
         plt_path = os.path.join(plt_dir, f"{metric_name}.svg")
-        plot_fps(results_df, metric_name, plt_path, sample_size=1000)
+        plot_fps(results_df, metric_name, plt_path, sample_size=5000)
 
 if __name__ == '__main__':
     models_path = "/mnt/lab_data2/atwang/models/domain_adapt/dnase/trained_models/transfer_v5/"
