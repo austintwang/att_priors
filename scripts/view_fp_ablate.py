@@ -120,7 +120,7 @@ def plot_fps(results_df, metric_name, plt_path, sample_size=None):
 
 def view_fp_ablate(results_path, plt_dir, models_path, model_query_run, prefix, metric_names):
     results = pd.read_pickle(results_path)["results"]
-    results_df, metric_names_vars, peak_table = load_fp_results(results, metric_names, peak_size)
+    results_df, metric_names_vars, peak_table = load_fp_results(results, metric_names)
     results_df = load_enrichments(results_df, prefix, models_path, model_query_run, peak_table)
     for metric_name in metric_names_vars:
         plt_path = os.path.join(plt_dir, f"{metric_name}.svg")
