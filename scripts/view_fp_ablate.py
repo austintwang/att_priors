@@ -41,7 +41,7 @@ def query_peak(query_table, peak):
             distance = np.abs((start + end) - (start_c + end_c)) / 2
             intersects[(chrom, start_c, end_c)] = distance
 
-    return min(intersects, key=intersects.get)
+    return min(intersects, key=intersects.get) if intersects else None
 
 def load_fp_results(results, metric_names):
     fps = []
