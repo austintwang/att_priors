@@ -115,7 +115,6 @@ def plot_fps(results_df, metric_name, plt_path, sample_size=None):
 
     sns.scatterplot(data=results_df, x="Enrichment Difference", y=metric_name, hue="Enrichment Sum", s=6)
     plt.title(f"{metric_name} vs. Peak Specificity")
-    plt_path = os.path.join(plt_dir, f"individual_genome.svg")
     plt.xlim((-7, 7),)
     plt.savefig(plt_path, bbox_inches='tight')
     plt.clf()
